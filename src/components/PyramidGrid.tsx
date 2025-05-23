@@ -35,6 +35,7 @@ export const PyramidGrid: React.FC<PyramidGridProps> = ({
             <HexagonBlock
               key={blockIndex}
               value={blocks[blockIndex]?.value || ''}
+              label={blocks[blockIndex]?.label || ''}
               isSelected={selectedBlocks.includes(blockIndex)}
               selectionOrder={selectedBlocks.indexOf(blockIndex) + 1 || undefined}
               onClick={() => onBlockClick(blockIndex)}

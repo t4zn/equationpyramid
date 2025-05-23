@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 
 interface HexagonBlockProps {
   value: string;
+  label: string;
   isSelected: boolean;
   selectionOrder?: number;
   onClick: () => void;
@@ -12,6 +13,7 @@ interface HexagonBlockProps {
 
 export const HexagonBlock: React.FC<HexagonBlockProps> = ({
   value,
+  label,
   isSelected,
   selectionOrder,
   onClick,
@@ -42,7 +44,14 @@ export const HexagonBlock: React.FC<HexagonBlockProps> = ({
         />
       </svg>
       
-      {/* Content */}
+      {/* Letter label */}
+      <div className="absolute top-1 left-2 z-10">
+        <span className="text-xs font-bold text-gray-900 bg-gray-300 px-1 rounded">
+          {label}
+        </span>
+      </div>
+      
+      {/* Value content */}
       <div className="absolute inset-0 flex items-center justify-center">
         <span className={cn(
           "text-sm font-bold transition-colors duration-200",

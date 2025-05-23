@@ -10,7 +10,13 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   
   // Generate 10 blocks for the pyramid (4 + 3 + 2 + 1)
   const shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
-  const shuffledOperators = [...operators, ...operators, ...operators].sort(() => Math.random() - 0.5);
+  
+  // Balance operators: ensure equal distribution of + - × ÷
+  const balancedOperators = ['+', '+', '+', '-', '-', '-', '×', '÷', '×', '÷']
+    .sort(() => Math.random() - 0.5);
+  
+  // Letter labels a-j for blocks
+  const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
   
   // Mix numbers and operators (roughly 60% numbers, 40% operators)
   for (let i = 0; i < 10; i++) {
@@ -20,22 +26,32 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
       blocks.push({
         value: num > 0 ? `+${num}` : `${num}`,
         type: 'number',
-        numericValue: num
+        numericValue: num,
+        label: letters[i]
       });
     } else {
       // Operator block with a number
       const num = shuffledNumbers[i % shuffledNumbers.length];
-      const op = shuffledOperators[i % shuffledOperators.length];
+      const op = balancedOperators[i - 6];
       blocks.push({
         value: `${op}${Math.abs(num)}`,
         type: 'operator',
-        numericValue: num
+        numericValue: num,
+        label: letters[i]
       });
     }
   }
   
   // Generate target number
   const targetNumber = Math.floor(Math.random() * 20) - 5; // Range from -5 to 14
+  
+  // Check if there's at least one valid combination
+  const validCombinations = findValidCombinations(blocks, targetNumber);
+  
+  // If no valid combinations, recursively regenerate
+  if (validCombinations.length === 0) {
+    return generatePyramid();
+  }
   
   return { blocks, targetNumber };
 };
@@ -113,7 +129,7 @@ export const evaluateEquation = (selectedIndices: number[], blocks: Block[]) => 
       result = result + thirdValue;
     }
     
-    const equation = `${first.value} ${second.value} ${third.value} = ${result}`;
+    const equation = `${first.label}(${first.value}) ${second.label}(${second.value}) ${third.label}(${third.value}) = ${result}`;
     
     return {
       isValid: true,
@@ -124,4 +140,22 @@ export const evaluateEquation = (selectedIndices: number[], blocks: Block[]) => 
   } catch (error) {
     return { isValid: false, message: 'Invalid equation' };
   }
+};
+
+// Convert letter input to block indices
+export const parseLetterInput = (input: string, blocks: Block[]): number[] => {
+  const letters = input.toLowerCase().replace(/[^a-j]/g, '').split('');
+  const uniqueLetters = [...new Set(letters)]; // Remove duplicates
+  
+  if (uniqueLetters.length > 3) {
+    return uniqueLetters.slice(0, 3).map(letter => {
+      const index = blocks.findIndex(block => block.label === letter);
+      return index !== -1 ? index : -1;
+    });
+  }
+  
+  return uniqueLetters.map(letter => {
+    const index = blocks.findIndex(block => block.label === letter);
+    return index !== -1 ? index : -1;
+  });
 };
