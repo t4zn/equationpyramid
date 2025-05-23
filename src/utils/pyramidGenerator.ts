@@ -2,7 +2,7 @@
 import { Block } from '../types/game';
 
 const operators = ['+', '-', '×', '÷'];
-const numbers = [-11, -10, -9, +1, +3, +4, +5, +6, +7, +9];
+const numbers = [-11, -10, -9, -5, -3, -1, +1, +3, +4, +5, +6, +7, +9, +11];
 
 export const generatePyramid = (): { blocks: Block[], targetNumber: number } => {
   // Create a mix of number and operator blocks
@@ -12,8 +12,17 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   const shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
   
   // Balance operators: ensure equal distribution of + - × ÷
-  const balancedOperators = ['+', '+', '+', '-', '-', '-', '×', '÷', '×', '÷']
-    .sort(() => Math.random() - 0.5);
+  const balancedOperators = [];
+  // Add 2-3 of each operator
+  for (let op of operators) {
+    const count = Math.floor(Math.random() * 2) + 2; // 2 or 3 of each operator
+    for (let i = 0; i < count; i++) {
+      balancedOperators.push(op);
+    }
+  }
+  
+  // Shuffle the operators
+  const shuffledOperators = balancedOperators.sort(() => Math.random() - 0.5);
   
   // Letter labels a-j for blocks
   const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
@@ -22,7 +31,7 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   for (let i = 0; i < 10; i++) {
     if (i < 6) {
       // Number block
-      const num = shuffledNumbers[i % shuffledNumbers.length];
+      const num = shuffledNumbers[i];
       blocks.push({
         value: num > 0 ? `+${num}` : `${num}`,
         type: 'number',
@@ -31,10 +40,10 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
       });
     } else {
       // Operator block with a number
-      const num = shuffledNumbers[i % shuffledNumbers.length];
-      const op = balancedOperators[i - 6];
+      const opIndex = (i - 6) % shuffledOperators.length;
+      const num = Math.abs(shuffledNumbers[i % shuffledNumbers.length]);
       blocks.push({
-        value: `${op}${Math.abs(num)}`,
+        value: `${shuffledOperators[opIndex]}${num}`,
         type: 'operator',
         numericValue: num,
         label: letters[i]
@@ -43,7 +52,7 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   }
   
   // Generate target number
-  const targetNumber = Math.floor(Math.random() * 20) - 5; // Range from -5 to 14
+  const targetNumber = Math.floor(Math.random() * 30) - 10; // Range from -10 to 19
   
   // Check if there's at least one valid combination
   const validCombinations = findValidCombinations(blocks, targetNumber);

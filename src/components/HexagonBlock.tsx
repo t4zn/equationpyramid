@@ -22,12 +22,19 @@ export const HexagonBlock: React.FC<HexagonBlockProps> = ({
   return (
     <div
       className={cn(
-        "relative w-16 h-16 cursor-pointer transition-all duration-200",
+        "relative w-16 h-20 cursor-pointer transition-all duration-200 pt-4",
         "hover:scale-105 hover:shadow-lg",
         className
       )}
       onClick={onClick}
     >
+      {/* Letter label above hexagon */}
+      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10">
+        <span className="text-sm font-bold bg-gray-800 text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-500">
+          {label.toUpperCase()}
+        </span>
+      </div>
+      
       {/* Hexagon SVG */}
       <svg 
         viewBox="0 0 100 100" 
@@ -38,24 +45,17 @@ export const HexagonBlock: React.FC<HexagonBlockProps> = ({
           className={cn(
             "transition-all duration-200",
             isSelected 
-              ? "fill-yellow-400 stroke-yellow-500 stroke-2" 
-              : "fill-gray-100 stroke-gray-300 stroke-1 hover:fill-gray-200"
+              ? "fill-yellow-500 stroke-yellow-300 stroke-2" 
+              : "fill-gray-700 stroke-gray-500 stroke-1 hover:fill-gray-600"
           )}
         />
       </svg>
       
-      {/* Letter label */}
-      <div className="absolute top-1 left-2 z-10">
-        <span className="text-xs font-bold text-gray-900 bg-gray-300 px-1 rounded">
-          {label}
-        </span>
-      </div>
-      
       {/* Value content */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 top-4 flex items-center justify-center">
         <span className={cn(
-          "text-sm font-bold transition-colors duration-200",
-          isSelected ? "text-gray-900" : "text-gray-700"
+          "text-base font-bold transition-colors duration-200",
+          isSelected ? "text-black" : "text-white"
         )}>
           {value}
         </span>
@@ -63,7 +63,7 @@ export const HexagonBlock: React.FC<HexagonBlockProps> = ({
       
       {/* Selection order indicator */}
       {isSelected && selectionOrder && (
-        <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
+        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-bold border-2 border-white">
           {selectionOrder}
         </div>
       )}

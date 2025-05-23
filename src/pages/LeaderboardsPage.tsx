@@ -41,7 +41,7 @@ const LeaderboardsPage = () => {
             score,
             rounds_completed,
             created_at,
-            profiles:user_id (username)
+            profiles(username)
           `)
           .order('score', { ascending: false })
           .limit(20);
