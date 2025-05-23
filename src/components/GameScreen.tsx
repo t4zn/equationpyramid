@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PyramidGrid } from './PyramidGrid';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,7 @@ export const GameScreen: React.FC = () => {
     selectedBlocks: [],
     currentEquation: '',
     score: 0,
-    timeRemaining: 30,
+    timeRemaining: 120, // Changed from 30 to 120 (2 minutes)
     gameStatus: 'playing',
     round: 1,
     inputValue: '',
@@ -53,7 +52,7 @@ export const GameScreen: React.FC = () => {
       targetNumber,
       selectedBlocks: [],
       currentEquation: '',
-      timeRemaining: 30,
+      timeRemaining: 120, // Changed from 30 to 120 (2 minutes)
       inputValue: '',
       history: []
     }));
@@ -305,8 +304,8 @@ export const GameScreen: React.FC = () => {
           </div>
           <div className="text-center">
             <div className="text-sm text-gray-300">Time</div>
-            <div className={`text-xl font-bold ${gameState.timeRemaining <= 10 ? 'text-red-400' : ''}`}>
-              {gameState.timeRemaining}s
+            <div className={`text-xl font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : ''}`}>
+              {Math.floor(gameState.timeRemaining / 60)}:{(gameState.timeRemaining % 60).toString().padStart(2, '0')}
             </div>
           </div>
         </div>

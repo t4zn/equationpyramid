@@ -11,11 +11,13 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   // Generate 10 blocks for the pyramid (4 + 3 + 2 + 1)
   const shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
   
-  // Balance operators: ensure equal distribution of + - × ÷
+  // Ensure equal distribution of all operators
+  // Create a balanced array with equal numbers of each operator
   const balancedOperators = [];
   // Add 2-3 of each operator
   for (let op of operators) {
-    const count = Math.floor(Math.random() * 2) + 2; // 2 or 3 of each operator
+    // Ensure at least 3 of each '*' and '/' operators
+    const count = op === '×' || op === '÷' ? 3 : Math.floor(Math.random() * 2) + 2; // 2-3 of + and -, 3 of × and ÷
     for (let i = 0; i < count; i++) {
       balancedOperators.push(op);
     }
@@ -27,24 +29,58 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   // Letter labels a-j for blocks
   const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
   
-  // Mix numbers and operators (roughly 60% numbers, 40% operators)
+  // Prepare positions for operators to ensure they are evenly distributed
+  const operatorPositions = [];
+  while (operatorPositions.length < 4) { // Want 4 operators out of 10 blocks
+    const pos = Math.floor(Math.random() * 10);
+    if (!operatorPositions.includes(pos)) {
+      operatorPositions.push(pos);
+    }
+  }
+  
+  // Make sure operators are not all in one row by forcing at least one in each of the 4 rows
+  // If we don't have an operator in row 1 (top), place one there
+  if (!operatorPositions.includes(0)) {
+    operatorPositions[0] = 0;
+  }
+  
+  // Ensure at least one operator in row 2
+  const row2 = [1, 2];
+  if (!row2.some(pos => operatorPositions.includes(pos))) {
+    operatorPositions[1] = row2[Math.floor(Math.random() * row2.length)];
+  }
+  
+  // Ensure at least one operator in row 3
+  const row3 = [3, 4, 5];
+  if (!row3.some(pos => operatorPositions.includes(pos))) {
+    operatorPositions[2] = row3[Math.floor(Math.random() * row3.length)];
+  }
+  
+  // Ensure at least one operator in row 4
+  const row4 = [6, 7, 8, 9];
+  if (!row4.some(pos => operatorPositions.includes(pos))) {
+    operatorPositions[3] = row4[Math.floor(Math.random() * row4.length)];
+  }
+  
+  // Assign operators and numbers to blocks
   for (let i = 0; i < 10; i++) {
-    if (i < 6) {
-      // Number block
-      const num = shuffledNumbers[i];
+    if (operatorPositions.includes(i)) {
+      // This position should be an operator
+      const opIndex = operatorPositions.indexOf(i);
+      const operator = shuffledOperators[opIndex % shuffledOperators.length];
+      const num = Math.abs(shuffledNumbers[i % shuffledNumbers.length]); // Use absolute value for operator blocks
       blocks.push({
-        value: num > 0 ? `+${num}` : `${num}`,
-        type: 'number',
+        value: `${operator}${num}`,
+        type: 'operator',
         numericValue: num,
         label: letters[i]
       });
     } else {
-      // Operator block with a number
-      const opIndex = (i - 6) % shuffledOperators.length;
-      const num = Math.abs(shuffledNumbers[i % shuffledNumbers.length]);
+      // This position should be a number
+      const num = shuffledNumbers[i % shuffledNumbers.length];
       blocks.push({
-        value: `${shuffledOperators[opIndex]}${num}`,
-        type: 'operator',
+        value: num > 0 ? `+${num}` : `${num}`,
+        type: 'number',
         numericValue: num,
         label: letters[i]
       });

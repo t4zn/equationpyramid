@@ -22,15 +22,15 @@ export const HexagonBlock: React.FC<HexagonBlockProps> = ({
   return (
     <div
       className={cn(
-        "relative w-16 h-20 cursor-pointer transition-all duration-200 pt-4",
+        "relative w-16 h-20 cursor-pointer transition-all duration-200 pt-6",
         "hover:scale-105 hover:shadow-lg",
         className
       )}
       onClick={onClick}
     >
       {/* Letter label above hexagon */}
-      <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10">
-        <span className="text-sm font-bold bg-gray-800 text-yellow-400 px-2 py-0.5 rounded-full border border-yellow-500">
+      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+        <span className="text-sm font-bold bg-gray-800 text-yellow-400 px-2 py-1 rounded-full border-2 border-yellow-500">
           {label.toUpperCase()}
         </span>
       </div>
@@ -52,7 +52,7 @@ export const HexagonBlock: React.FC<HexagonBlockProps> = ({
       </svg>
       
       {/* Value content */}
-      <div className="absolute inset-0 top-4 flex items-center justify-center">
+      <div className="absolute inset-0 top-8 flex items-center justify-center">
         <span className={cn(
           "text-base font-bold transition-colors duration-200",
           isSelected ? "text-black" : "text-white"

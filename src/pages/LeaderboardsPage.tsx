@@ -1,28 +1,28 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LeaderboardEntry {
   id: string;
-  username: string;
   score: number;
   rounds_completed: number;
   created_at: string;
+  profiles?: {
+    username: string;
+  };
 }
 
 const LeaderboardsPage = () => {
-  const { authState } = useAuth();
   const navigate = useNavigate();
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const { authState } = useAuth();
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Redirect if not logged in
     if (!authState.user && !authState.loading) {
       navigate('/login');
     }
@@ -31,43 +31,30 @@ const LeaderboardsPage = () => {
   useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
-        setLoading(true);
-        
-        // Join leaderboards with profiles to get usernames
+        // Get leaderboard data with profile information
         const { data, error } = await supabase
           .from('leaderboards')
-          .select(`
-            id,
-            score,
-            rounds_completed,
-            created_at,
-            profiles(username)
-          `)
+          .select('*, profiles:user_id(username)')
           .order('score', { ascending: false })
-          .limit(20);
-          
+          .limit(50);
+
         if (error) {
           throw error;
         }
-        
-        // Transform the data to flatten the structure
-        const formattedData = data.map(entry => ({
-          id: entry.id,
-          username: entry.profiles?.username || 'Unknown Player',
-          score: entry.score,
-          rounds_completed: entry.rounds_completed,
-          created_at: entry.created_at
-        }));
-        
-        setLeaderboard(formattedData);
-      } catch (err: any) {
-        console.error('Error fetching leaderboard:', err);
-        setError(err.message || 'Failed to fetch leaderboard');
+
+        setLeaderboardData(data || []);
+      } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load leaderboard data.',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchLeaderboard();
   }, []);
 
@@ -78,91 +65,74 @@ const LeaderboardsPage = () => {
         backgroundImage: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23333\"/><circle cx=\"20\" cy=\"20\" r=\"1\" fill=\"%23444\"/><circle cx=\"80\" cy=\"40\" r=\"1\" fill=\"%23444\"/><circle cx=\"40\" cy=\"80\" r=\"1\" fill=\"%23444\"/></svg>')"
       }}
     >
-      <Card className="w-full max-w-4xl bg-gray-800 border-yellow-500">
+      <Card className="w-full max-w-3xl bg-gray-800 border-yellow-500">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center text-yellow-400">
-            Leaderboards
+          <CardTitle className="text-2xl font-bold text-center text-yellow-400">
+            Top Scores
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8">
-              <p className="text-gray-300">Loading leaderboard data...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-8">
-              <p className="text-red-400">{error}</p>
-            </div>
-          ) : leaderboard.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-300">No scores recorded yet. Be the first!</p>
+            <div className="flex justify-center p-4">
+              <p className="text-white">Loading leaderboard data...</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-gray-900 rounded-lg overflow-hidden">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Rank
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Player
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Rounds
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                      Date
-                    </th>
+              <table className="w-full text-white">
+                <thead>
+                  <tr className="border-b border-gray-600">
+                    <th className="px-4 py-2 text-left">Rank</th>
+                    <th className="px-4 py-2 text-left">Player</th>
+                    <th className="px-4 py-2 text-right">Score</th>
+                    <th className="px-4 py-2 text-right">Rounds</th>
+                    <th className="px-4 py-2 text-right">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {leaderboard.map((entry, index) => (
-                    <tr 
-                      key={entry.id} 
-                      className={index < 3 ? 'bg-yellow-900 bg-opacity-30' : ''}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`text-sm ${index < 3 ? 'text-yellow-400 font-bold' : 'text-gray-300'}`}>
-                          #{index + 1}
-                        </div>
+                <tbody>
+                  {leaderboardData.map((entry, index) => (
+                    <tr key={entry.id} className={`border-b border-gray-700 ${index < 3 ? 'bg-gray-700' : ''}`}>
+                      <td className="px-4 py-2">
+                        <span className={`font-bold ${
+                          index === 0 ? 'text-yellow-400' : 
+                          index === 1 ? 'text-gray-300' : 
+                          index === 2 ? 'text-yellow-700' : ''
+                        }`}>
+                          {index + 1}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-white">
-                          {entry.username}
-                          {authState.user?.username === entry.username && (
-                            <span className="ml-2 text-xs text-yellow-400">(You)</span>
-                          )}
-                        </div>
+                      <td className="px-4 py-2">
+                        {entry.profiles?.username || 'Unknown Player'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-white">{entry.score}</div>
+                      <td className="px-4 py-2 text-right font-mono">
+                        {entry.score}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-300">{entry.rounds_completed}</div>
+                      <td className="px-4 py-2 text-right">
+                        {entry.rounds_completed}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-300">
-                          {new Date(entry.created_at).toLocaleDateString()}
-                        </div>
+                      <td className="px-4 py-2 text-right text-xs">
+                        {new Date(entry.created_at).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
+                  {leaderboardData.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                        No scores recorded yet. Be the first to play!
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
           )}
           
           <div className="mt-6 flex justify-center">
-            <Button 
-              onClick={() => navigate('/home')} 
-              className="bg-yellow-500 hover:bg-yellow-600 text-gray-900"
+            <button 
+              onClick={() => navigate('/home')}
+              className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded"
             >
               Back to Home
-            </Button>
+            </button>
           </div>
         </CardContent>
       </Card>
