@@ -1,74 +1,67 @@
-
 import { Block } from '../types/game';
 
 const operators = ['+', '-', '×', '÷'];
 const numbers = [-11, -10, -9, -5, -3, -1, +1, +3, +4, +5, +6, +7, +9, +11];
 
 export const generatePyramid = (): { blocks: Block[], targetNumber: number } => {
-  // Create a mix of number and operator blocks
   const blocks: Block[] = [];
   
   // Generate 10 blocks for the pyramid (4 + 3 + 2 + 1)
   const shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
   
-  // Ensure equal distribution of all operators
-  // Create a balanced array with equal numbers of each operator
-  const balancedOperators = [];
-  // Add 2-3 of each operator
-  for (let op of operators) {
-    // Ensure at least 3 of each '*' and '/' operators
-    const count = op === '×' || op === '÷' ? 3 : Math.floor(Math.random() * 2) + 2; // 2-3 of + and -, 3 of × and ÷
-    for (let i = 0; i < count; i++) {
-      balancedOperators.push(op);
-    }
-  }
+  // Force more multiplication and division operators
+  // Create an array with guaranteed × and ÷ operators
+  const guaranteedOperators = ['×', '×', '÷', '÷', '+', '-']; // 2 each of × and ÷, 1 each of + and -
+  const additionalOperators = ['+', '-', '×', '÷']; // Additional operators to fill
   
-  // Shuffle the operators
-  const shuffledOperators = balancedOperators.sort(() => Math.random() - 0.5);
+  // Shuffle both arrays
+  const shuffledGuaranteed = guaranteedOperators.sort(() => Math.random() - 0.5);
+  const shuffledAdditional = additionalOperators.sort(() => Math.random() - 0.5);
+  
+  // Combine for final operator array
+  const finalOperators = [...shuffledGuaranteed, ...shuffledAdditional].slice(0, 4);
   
   // Letter labels a-j for blocks
   const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
   
-  // Prepare positions for operators to ensure they are evenly distributed
+  // Define pyramid structure with row information
+  const pyramidStructure = [
+    { row: 1, positions: [0] },
+    { row: 2, positions: [1, 2] },
+    { row: 3, positions: [3, 4, 5] },
+    { row: 4, positions: [6, 7, 8, 9] }
+  ];
+  
+  // Ensure operators are distributed across different rows
   const operatorPositions = [];
-  while (operatorPositions.length < 4) { // Want 4 operators out of 10 blocks
-    const pos = Math.floor(Math.random() * 10);
-    if (!operatorPositions.includes(pos)) {
-      operatorPositions.push(pos);
+  
+  // Place one operator in each row to ensure distribution
+  for (let rowInfo of pyramidStructure) {
+    if (operatorPositions.length < 4) {
+      const randomPosInRow = rowInfo.positions[Math.floor(Math.random() * rowInfo.positions.length)];
+      // Avoid duplicates
+      if (!operatorPositions.includes(randomPosInRow)) {
+        operatorPositions.push(randomPosInRow);
+      }
     }
   }
   
-  // Make sure operators are not all in one row by forcing at least one in each of the 4 rows
-  // If we don't have an operator in row 1 (top), place one there
-  if (!operatorPositions.includes(0)) {
-    operatorPositions[0] = 0;
+  // If we need more operators, add them randomly from remaining positions
+  while (operatorPositions.length < 4) {
+    const randomPos = Math.floor(Math.random() * 10);
+    if (!operatorPositions.includes(randomPos)) {
+      operatorPositions.push(randomPos);
+    }
   }
   
-  // Ensure at least one operator in row 2
-  const row2 = [1, 2];
-  if (!row2.some(pos => operatorPositions.includes(pos))) {
-    operatorPositions[1] = row2[Math.floor(Math.random() * row2.length)];
-  }
-  
-  // Ensure at least one operator in row 3
-  const row3 = [3, 4, 5];
-  if (!row3.some(pos => operatorPositions.includes(pos))) {
-    operatorPositions[2] = row3[Math.floor(Math.random() * row3.length)];
-  }
-  
-  // Ensure at least one operator in row 4
-  const row4 = [6, 7, 8, 9];
-  if (!row4.some(pos => operatorPositions.includes(pos))) {
-    operatorPositions[3] = row4[Math.floor(Math.random() * row4.length)];
-  }
-  
-  // Assign operators and numbers to blocks
+  // Create blocks with better distribution
   for (let i = 0; i < 10; i++) {
-    if (operatorPositions.includes(i)) {
+    const operatorIndex = operatorPositions.indexOf(i);
+    
+    if (operatorIndex !== -1) {
       // This position should be an operator
-      const opIndex = operatorPositions.indexOf(i);
-      const operator = shuffledOperators[opIndex % shuffledOperators.length];
-      const num = Math.abs(shuffledNumbers[i % shuffledNumbers.length]); // Use absolute value for operator blocks
+      const operator = finalOperators[operatorIndex];
+      const num = Math.abs(shuffledNumbers[i % shuffledNumbers.length]);
       blocks.push({
         value: `${operator}${num}`,
         type: 'operator',
@@ -97,6 +90,11 @@ export const generatePyramid = (): { blocks: Block[], targetNumber: number } => 
   if (validCombinations.length === 0) {
     return generatePyramid();
   }
+  
+  console.log('Generated pyramid with operators:', 
+    blocks.filter(b => b.type === 'operator').map(b => b.value),
+    'Valid combinations:', validCombinations.length
+  );
   
   return { blocks, targetNumber };
 };

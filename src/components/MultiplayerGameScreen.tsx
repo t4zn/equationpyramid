@@ -6,12 +6,28 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { GameState } from '../types/game';
 import { generatePyramid, evaluateEquation, parseLetterInput, findValidCombinations } from '../utils/pyramidGenerator';
 import { toast } from '@/hooks/use-toast';
 
-export const GameScreen: React.FC = () => {
+interface MultiplayerGameProps {
+  gameMode: 'local' | 'online';
+  playerCount: number;
+  roomId?: string;
+}
+
+interface Player {
+  id: string;
+  name: string;
+  score: number;
+  isCurrentPlayer: boolean;
+}
+
+export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({ 
+  gameMode, 
+  playerCount, 
+  roomId 
+}) => {
   const { authState } = useAuth();
   const navigate = useNavigate();
   
@@ -28,14 +44,25 @@ export const GameScreen: React.FC = () => {
     history: []
   });
 
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [correctCombinations, setCorrectCombinations] = useState<number[][]>([]);
   const [foundCombinations, setFoundCombinations] = useState<number[][]>([]);
 
   useEffect(() => {
-    if (!authState.user && !authState.loading) {
-      navigate('/login');
+    // Initialize players
+    const initialPlayers: Player[] = [];
+    for (let i = 0; i < playerCount; i++) {
+      initialPlayers.push({
+        id: `player_${i}`,
+        name: gameMode === 'local' ? `Player ${i + 1}` : `Player ${i + 1}`,
+        score: 0,
+        isCurrentPlayer: i === 0
+      });
     }
-  }, [authState.user, authState.loading, navigate]);
+    setPlayers(initialPlayers);
+    initializeGame();
+  }, []);
 
   const initializeGame = () => {
     const { blocks, targetNumber } = generatePyramid();
@@ -62,10 +89,6 @@ export const GameScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    initializeGame();
-  }, []);
-
-  useEffect(() => {
     if (gameState.timeRemaining > 0 && gameState.gameStatus === 'playing') {
       const timer = setTimeout(() => {
         setGameState(prev => ({
@@ -75,41 +98,31 @@ export const GameScreen: React.FC = () => {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (gameState.timeRemaining === 0) {
-      setGameState(prev => ({ ...prev, gameStatus: 'completed' }));
-      toast({
-        title: "Time's up!",
-        description: `Final score: ${gameState.score}`,
-        variant: "destructive"
-      });
-      
-      if (authState.user) {
-        saveScore();
-      }
+      nextPlayer();
     }
   }, [gameState.timeRemaining, gameState.gameStatus]);
 
-  const saveScore = async () => {
-    if (!authState.user) return;
+  const nextPlayer = () => {
+    const nextIndex = (currentPlayerIndex + 1) % playerCount;
+    setCurrentPlayerIndex(nextIndex);
     
-    try {
-      await supabase.from('leaderboards').insert({
-        user_id: authState.user.id,
-        score: gameState.score,
-        rounds_completed: gameState.round - 1
-      });
-      
-      toast({
-        title: "Score saved",
-        description: "Your score has been saved to the leaderboard",
-      });
-    } catch (error) {
-      console.error('Error saving score:', error);
-      toast({
-        title: "Failed to save score",
-        description: "There was an error saving your score",
-        variant: "destructive"
-      });
-    }
+    setPlayers(prev => prev.map((player, index) => ({
+      ...player,
+      isCurrentPlayer: index === nextIndex
+    })));
+    
+    setGameState(prev => ({
+      ...prev,
+      timeRemaining: 120,
+      selectedBlocks: [],
+      inputValue: '',
+      history: []
+    }));
+    
+    toast({
+      title: `${players[nextIndex]?.name}'s Turn`,
+      description: "2 minutes on the clock!",
+    });
   };
 
   const handleBlockClick = (index: number) => {
@@ -174,7 +187,6 @@ export const GameScreen: React.FC = () => {
       
       setGameState(prev => ({ 
         ...prev, 
-        score: Math.max(0, prev.score - 5),
         selectedBlocks: [],
         inputValue: '',
         history: [
@@ -199,7 +211,7 @@ export const GameScreen: React.FC = () => {
       if (combinationExists) {
         toast({
           title: "Already Found!",
-          description: "You've already discovered this combination.",
+          description: "This combination was already discovered.",
           variant: "destructive"
         });
         
@@ -217,6 +229,13 @@ export const GameScreen: React.FC = () => {
       // Add to found combinations
       setFoundCombinations(prev => [...prev, [...gameState.selectedBlocks]]);
       
+      // Update player score
+      setPlayers(prev => prev.map((player, index) => 
+        index === currentPlayerIndex 
+          ? { ...player, score: player.score + totalPoints }
+          : player
+      ));
+      
       toast({
         title: "Correct!",
         description: `+${totalPoints} points! ${result.equation}`,
@@ -225,7 +244,6 @@ export const GameScreen: React.FC = () => {
       
       setGameState(prev => ({ 
         ...prev, 
-        score: prev.score + totalPoints,
         selectedBlocks: [],
         inputValue: '',
         history: [
@@ -242,7 +260,7 @@ export const GameScreen: React.FC = () => {
       if (foundCombinations.length + 1 >= correctCombinations.length) {
         toast({
           title: "All combinations found!",
-          description: "Amazing! You found them all. New puzzle loading...",
+          description: "Moving to next round...",
         });
         
         setTimeout(() => {
@@ -259,7 +277,6 @@ export const GameScreen: React.FC = () => {
       
       setGameState(prev => ({ 
         ...prev, 
-        score: Math.max(0, prev.score - 5),
         selectedBlocks: [],
         inputValue: '',
         history: [
@@ -274,53 +291,46 @@ export const GameScreen: React.FC = () => {
     }
   };
 
-  const resetGame = () => {
-    setGameState(prev => ({
-      ...prev,
-      score: 0,
-      round: 1,
-      gameStatus: 'playing',
-      selectedBlocks: [],
-      inputValue: '',
-      history: []
-    }));
-    setFoundCombinations([]);
-    initializeGame();
-  };
-  
-  const nextPuzzle = () => {
-    setGameState(prev => ({ ...prev, round: prev.round + 1 }));
-    initializeGame();
-  };
+  const currentPlayer = players[currentPlayerIndex];
 
   return (
     <div 
       className="min-h-screen bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4"
       style={{
-        backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23111827\"/><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"%23fbbf24\" opacity=\"0.6\"/><circle cx=\"80\" cy=\"40\" r=\"1.5\" fill=\"%23fbbf24\" opacity=\"0.4\"/><circle cx=\"40\" cy=\"80\" r=\"2\" fill=\"%23fbbf24\" opacity=\"0.5\"/></svg>')"
+        backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%231a1a2e\"/><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"%23ffd700\" opacity=\"0.6\"/><circle cx=\"80\" cy=\"40\" r=\"1.5\" fill=\"%23ffd700\" opacity=\"0.4\"/><circle cx=\"40\" cy=\"80\" r=\"2\" fill=\"%23ffd700\" opacity=\"0.5\"/></svg>')"
       }}
     >
       {/* Header */}
       <div className="text-center mb-6">
-        <h1 className="text-4xl font-bold text-yellow-400 mb-4">🔢 Equation Pyramid Challenge 🔢</h1>
-        <div className="flex justify-center space-x-8 text-white">
-          <div className="text-center">
-            <div className="text-sm text-gray-300">Score</div>
-            <div className="text-2xl font-bold text-green-400">{gameState.score}</div>
-          </div>
+        <h1 className="text-3xl font-bold text-yellow-400 mb-4">Multiplayer Pyramid Challenge</h1>
+        
+        {/* Player Scores */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          {players.map((player, index) => (
+            <Card key={player.id} className={`p-3 ${player.isCurrentPlayer ? 'bg-yellow-500 text-black border-2 border-yellow-300' : 'bg-gray-800 border-gray-600'}`}>
+              <div className="text-center">
+                <div className="text-sm font-semibold">{player.name}</div>
+                <div className="text-xl font-bold">{player.score}</div>
+                {player.isCurrentPlayer && <div className="text-xs">ACTIVE</div>}
+              </div>
+            </Card>
+          ))}
+        </div>
+        
+        <div className="flex justify-center space-x-6 text-white">
           <div className="text-center">
             <div className="text-sm text-gray-300">Round</div>
-            <div className="text-2xl font-bold text-blue-400">{gameState.round}</div>
+            <div className="text-xl font-bold">{gameState.round}</div>
           </div>
           <div className="text-center">
             <div className="text-sm text-gray-300">Time</div>
-            <div className={`text-2xl font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : 'text-white'}`}>
+            <div className={`text-xl font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : ''}`}>
               {Math.floor(gameState.timeRemaining / 60)}:{(gameState.timeRemaining % 60).toString().padStart(2, '0')}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-sm text-gray-300">Found</div>
-            <div className="text-2xl font-bold text-purple-400">
+            <div className="text-sm text-gray-300">Combinations</div>
+            <div className="text-xl font-bold text-green-400">
               {foundCombinations.length}/{correctCombinations.length}
             </div>
           </div>
@@ -328,10 +338,17 @@ export const GameScreen: React.FC = () => {
       </div>
 
       {/* Target Number */}
-      <Card className="mb-6 p-6 bg-gradient-to-r from-yellow-500 to-yellow-600 border-2 border-yellow-400 shadow-2xl">
+      <Card className="mb-6 p-4 bg-yellow-400 border-yellow-500">
         <div className="text-center">
-          <div className="text-lg font-bold text-gray-800">🎯 TARGET 🎯</div>
-          <div className="text-5xl font-bold text-gray-900">{gameState.targetNumber}</div>
+          <div className="text-sm font-semibold text-gray-800">TARGET</div>
+          <div className="text-3xl font-bold text-gray-900">{gameState.targetNumber}</div>
+        </div>
+      </Card>
+
+      {/* Current Player Indicator */}
+      <Card className="mb-6 p-3 bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500">
+        <div className="text-center text-white">
+          <div className="text-lg font-bold">{currentPlayer?.name}'s Turn</div>
         </div>
       </Card>
 
@@ -345,20 +362,20 @@ export const GameScreen: React.FC = () => {
       </div>
 
       {/* Letter Input */}
-      <div className="w-full max-w-md mb-6">
-        <div className="flex items-center space-x-3">
+      <div className="w-full max-w-md mb-4">
+        <div className="flex items-center space-x-2">
           <Input
             placeholder="Enter block letters (e.g., 'abc')"
             value={gameState.inputValue}
             onChange={handleInputChange}
             maxLength={3}
-            className="bg-gray-700 text-white border-2 border-yellow-500 focus:border-yellow-400 text-lg"
+            className="bg-gray-700 text-white border-yellow-500 focus:border-yellow-400"
             disabled={gameState.gameStatus !== 'playing'}
           />
           <Button
             onClick={submitEquation}
             disabled={gameState.selectedBlocks.length !== 3 || gameState.gameStatus !== 'playing'}
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-2 font-semibold"
+            className="bg-green-600 hover:bg-green-700 text-white"
           >
             Submit
           </Button>
@@ -367,10 +384,10 @@ export const GameScreen: React.FC = () => {
 
       {/* Selected Equation Preview */}
       {gameState.selectedBlocks.length > 0 && (
-        <Card className="mb-6 p-4 bg-gradient-to-r from-gray-800 to-gray-700 border-2 border-gray-600 w-full max-w-md shadow-lg">
+        <Card className="mb-4 p-3 bg-gray-800 border-gray-600 w-full max-w-md">
           <div className="text-center text-white">
-            <div className="text-sm text-gray-300 mb-2">Selected Equation:</div>
-            <div className="text-xl font-mono">
+            <div className="text-sm text-gray-300">Selected Equation:</div>
+            <div className="text-lg font-mono">
               {gameState.selectedBlocks.map((index, i) => (
                 <span key={index}>
                   {gameState.blocks[index]?.label}({gameState.blocks[index]?.value})
@@ -384,79 +401,42 @@ export const GameScreen: React.FC = () => {
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap justify-center gap-3 mb-6">
+      <div className="flex space-x-4 mb-4">
         <Button 
           onClick={() => setGameState(prev => ({ ...prev, selectedBlocks: [], inputValue: '' }))}
           variant="outline"
-          className="border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900"
+          className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900"
         >
           Clear Selection
         </Button>
         <Button
-          onClick={nextPuzzle}
+          onClick={nextPlayer}
           variant="outline"
-          className="border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-gray-900"
+          className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-gray-900"
         >
-          Next Puzzle
-        </Button>
-        <Button
-          onClick={() => navigate('/home')}
-          variant="outline"
-          className="border-2 border-gray-400 text-gray-400 hover:bg-gray-700"
-        >
-          Back to Home
+          Skip Turn
         </Button>
       </div>
+      
+      <Button
+        onClick={() => navigate('/multiplayer')}
+        variant="outline"
+        className="border-gray-400 text-gray-400 hover:bg-gray-700"
+      >
+        Back to Multiplayer Menu
+      </Button>
 
       {/* Found Combinations */}
       {foundCombinations.length > 0 && (
-        <Card className="mb-4 p-4 bg-gradient-to-r from-green-800 to-green-700 border-2 border-green-600 w-full max-w-md shadow-lg">
+        <Card className="mt-4 p-3 bg-gray-800 border-gray-600 w-full max-w-md">
           <div className="text-white">
-            <div className="text-sm text-gray-200 mb-2 font-semibold">✅ Found Combinations:</div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="text-sm text-gray-300 mb-2">Found Combinations:</div>
+            <div className="space-y-1 max-h-32 overflow-y-auto">
               {foundCombinations.map((combo, i) => (
-                <div key={i} className="text-sm text-green-200 font-mono bg-green-900/50 px-2 py-1 rounded">
+                <div key={i} className="text-sm text-green-400 font-mono">
                   {combo.map(index => gameState.blocks[index]?.label).join('')}
                 </div>
               ))}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Equation History */}
-      {gameState.history.length > 0 && (
-        <Card className="p-4 bg-gradient-to-r from-gray-800 to-gray-700 border-2 border-gray-600 w-full max-w-md shadow-lg">
-          <div className="text-white">
-            <div className="text-sm text-gray-300 mb-2 font-semibold">📝 Recent Attempts:</div>
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {gameState.history.slice(-5).map((item, i) => (
-                <div 
-                  key={i} 
-                  className={`text-sm font-mono ${item.success ? 'text-green-400' : 'text-red-400'}`}
-                >
-                  {item.equation} = {item.result} {item.success ? '✅' : '❌'}
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Game Over Screen */}
-      {gameState.gameStatus === 'completed' && (
-        <Card className="absolute inset-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-yellow-400 flex flex-col items-center justify-center shadow-2xl">
-          <div className="text-center text-white p-8">
-            <h2 className="text-4xl font-bold text-yellow-400 mb-6">🏁 Game Over! 🏁</h2>
-            <div className="text-2xl mb-3">Final Score: <span className="font-bold text-green-400">{gameState.score}</span></div>
-            <div className="text-xl mb-8">Rounds Completed: <span className="font-bold text-blue-400">{gameState.round - 1}</span></div>
-            <div className="flex space-x-6">
-              <Button onClick={resetGame} className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 hover:from-yellow-300 hover:to-yellow-400 px-8 py-3 text-lg font-semibold">
-                🎮 Play Again
-              </Button>
-              <Button onClick={() => navigate('/home')} variant="outline" className="border-2 border-gray-400 text-gray-400 hover:bg-gray-700 px-8 py-3 text-lg">
-                🏠 Back to Home
-              </Button>
             </div>
           </div>
         </Card>
