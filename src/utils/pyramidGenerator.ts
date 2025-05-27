@@ -1,3 +1,4 @@
+
 import { Block } from '../types/game';
 
 const operators = ['+', '-', '×', '÷'];
@@ -53,7 +54,7 @@ export const generatePyramid = () => {
     // Check if we can find valid combinations
     const validCombinations = findValidCombinations(blocks, targetNumber);
     
-    // Accept if we have 2-4 combinations
+    // Accept if we have 2-4 combinations (limit enforced)
     if (validCombinations.length >= 2 && validCombinations.length <= 4) {
       return { blocks, targetNumber };
     }
@@ -94,6 +95,10 @@ export const findValidCombinations = (blocks: Block[], target: number): number[]
           const result = evaluateEquation([i, j, k], blocks);
           if (result.isValid && result.result === target) {
             validCombinations.push([i, j, k]);
+            // Limit to maximum 4 combinations
+            if (validCombinations.length >= 4) {
+              return validCombinations;
+            }
           }
         }
       }
@@ -110,50 +115,53 @@ export const evaluateEquation = (selectedIndices: number[], blocks: Block[]) => 
   
   const [first, second, third] = selectedIndices.map(i => blocks[i]);
   
-  // Apply the "first block operator inapplicability" rule
-  const firstValue = Math.abs(first.numericValue || 0);
-  const secondValue = second.numericValue || 0;
-  const thirdValue = third.numericValue || 0;
+  // First block must be a number
+  if (first.type !== 'number') {
+    return { isValid: false, message: 'First block must be a number' };
+  }
   
-  // Extract operator from second block
-  const secondOp = second.value.charAt(0);
-  const thirdOp = third.value.charAt(0);
+  let result = first.numericValue || 0;
   
   try {
-    let result = firstValue;
-    
-    // Apply second block operation
-    if (secondOp === '+') {
-      result = result + Math.abs(secondValue);
-    } else if (secondOp === '-') {
-      result = result - Math.abs(secondValue);
-    } else if (secondOp === '×') {
-      result = result * Math.abs(secondValue);
-    } else if (secondOp === '÷') {
-      if (Math.abs(secondValue) === 0) {
-        return { isValid: false, message: 'Division by zero!' };
+    // Process second block
+    if (second.type === 'operator') {
+      // Second block is operator, third must be number
+      if (third.type !== 'number') {
+        return { isValid: false, message: 'After operator, need a number' };
       }
-      result = result / Math.abs(secondValue);
-    } else {
-      // If second block is a number, just add it
-      result = result + secondValue;
-    }
-    
-    // Apply third block operation
-    if (thirdOp === '+') {
-      result = result + Math.abs(thirdValue);
-    } else if (thirdOp === '-') {
-      result = result - Math.abs(thirdValue);
-    } else if (thirdOp === '×') {
-      result = result * Math.abs(thirdValue);
-    } else if (thirdOp === '÷') {
-      if (Math.abs(thirdValue) === 0) {
-        return { isValid: false, message: 'Division by zero!' };
+      
+      const operator = second.value;
+      const operand = third.numericValue || 0;
+      
+      switch (operator) {
+        case '+':
+          result = result + operand;
+          break;
+        case '-':
+          result = result - operand;
+          break;
+        case '×':
+        case '*':
+          result = result * operand;
+          break;
+        case '÷':
+        case '/':
+          if (operand === 0) {
+            return { isValid: false, message: 'Division by zero!' };
+          }
+          result = result / operand;
+          break;
+        default:
+          return { isValid: false, message: 'Invalid operator' };
       }
-      result = result / Math.abs(thirdValue);
-    } else {
-      // If third block is a number, just add it
-      result = result + thirdValue;
+    } else if (second.type === 'number') {
+      // Second block is number
+      if (third.type === 'operator') {
+        return { isValid: false, message: 'Cannot have operator at end' };
+      } else {
+        // Both second and third are numbers, just add them
+        result = result + (second.numericValue || 0) + (third.numericValue || 0);
+      }
     }
     
     const equation = `${first.label}(${first.value}) ${second.label}(${second.value}) ${third.label}(${third.value}) = ${result}`;

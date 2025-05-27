@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { GameState } from '../types/game';
 import { generatePyramid, evaluateEquation, parseLetterInput, findValidCombinations } from '../utils/pyramidGenerator';
 import { toast } from '@/hooks/use-toast';
@@ -28,7 +27,6 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
   playerCount, 
   roomId 
 }) => {
-  const { authState } = useAuth();
   const navigate = useNavigate();
   
   const [gameState, setGameState] = useState<GameState>({
@@ -49,14 +47,13 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
   const [foundCombinations, setFoundCombinations] = useState<number[][]>([]);
 
   useEffect(() => {
-    // Initialize players based on actual playerCount
     const initialPlayers: Player[] = [];
     for (let i = 0; i < playerCount; i++) {
       initialPlayers.push({
         id: `player_${i}`,
-        name: gameMode === 'local' ? `Player ${i + 1}` : `Player ${i + 1}`,
+        name: `Player ${i + 1}`,
         score: 0,
-        isCurrentUser: i === 0 // First player is current user for simplicity
+        isCurrentUser: i === 0
       });
     }
     setPlayers(initialPlayers);
@@ -67,7 +64,7 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
     const { blocks, targetNumber } = generatePyramid();
     const validCombinations = findValidCombinations(blocks, targetNumber);
     
-    // Limit combinations to maximum 4
+    // Limit to maximum 4 combinations
     const limitedCombinations = validCombinations.slice(0, 4);
     
     if (limitedCombinations.length === 0) {
@@ -107,7 +104,6 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
   const endGame = () => {
     setGameState(prev => ({ ...prev, gameStatus: 'completed' }));
     
-    // Find winner
     const winner = players.reduce((prev, current) => 
       prev.score > current.score ? prev : current
     );
@@ -195,7 +191,6 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
     }
 
     if (result.result === gameState.targetNumber) {
-      // Check if this combination was already found
       const combinationExists = foundCombinations.some(combo => 
         combo.length === gameState.selectedBlocks.length &&
         combo.every(val => gameState.selectedBlocks.includes(val))
@@ -219,10 +214,8 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
       const timeBonus = Math.floor(gameState.timeRemaining / 6);
       const totalPoints = 10 + timeBonus;
       
-      // Add to found combinations
       setFoundCombinations(prev => [...prev, [...gameState.selectedBlocks]]);
       
-      // Update current user's score (first player for local multiplayer)
       setPlayers(prev => prev.map((player, index) => 
         player.isCurrentUser || index === 0
           ? { ...player, score: player.score + totalPoints }
@@ -249,7 +242,6 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
         ]
       }));
       
-      // Check if all combinations found
       if (foundCombinations.length + 1 >= correctCombinations.length) {
         toast({
           title: "All combinations found!",
@@ -285,19 +277,14 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
   };
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4"
-      style={{
-        backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%231a1a2e\"/><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"%23ffd700\" opacity=\"0.6\"/><circle cx=\"80\" cy=\"40\" r=\"1.5\" fill=\"%23ffd700\" opacity=\"0.4\"/><circle cx=\"40\" cy=\"80\" r=\"2\" fill=\"%23ffd700\" opacity=\"0.5\"/></svg>')"
-      }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-3 flex flex-col">
       {/* Game Over Screen */}
       {gameState.gameStatus === 'completed' && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
           <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-yellow-400 shadow-2xl max-w-md w-full">
-            <div className="text-center text-white p-8">
-              <h2 className="text-4xl font-bold text-yellow-400 mb-6">🏁 Game Over! 🏁</h2>
-              <div className="space-y-3 mb-6">
+            <div className="text-center text-white p-6">
+              <h2 className="text-3xl font-bold text-yellow-400 mb-4">🏁 Game Over! 🏁</h2>
+              <div className="space-y-2 mb-4">
                 {players.map((player, index) => (
                   <div key={player.id} className="flex justify-between items-center">
                     <span className="text-lg">{player.name}:</span>
@@ -305,14 +292,12 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
                   </div>
                 ))}
               </div>
-              <div className="flex flex-col gap-4">
-                <Button 
-                  onClick={() => navigate('/multiplayer')} 
-                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 hover:from-yellow-300 hover:to-yellow-400 px-8 py-3 text-lg font-semibold"
-                >
-                  🏠 Back to Multiplayer
-                </Button>
-              </div>
+              <Button 
+                onClick={() => navigate('/multiplayer')} 
+                className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 hover:from-yellow-300 hover:to-yellow-400 px-6 py-2 text-lg font-semibold w-full"
+              >
+                🏠 Back to Multiplayer
+              </Button>
             </div>
           </Card>
         </div>
@@ -321,36 +306,45 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
       {/* Main Game Content */}
       {gameState.gameStatus !== 'completed' && (
         <>
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-yellow-400 mb-4">Real-Time Multiplayer Challenge</h1>
+          {/* Room Code Display */}
+          {roomId && (
+            <Card className="mb-3 p-2 bg-gradient-to-r from-purple-600 to-purple-700 border-purple-500 shadow-lg">
+              <div className="text-center text-white">
+                <div className="text-xs font-semibold">Room Code</div>
+                <div className="text-lg font-bold tracking-wider">{roomId}</div>
+              </div>
+            </Card>
+          )}
+
+          {/* Header with Player Scores */}
+          <div className="text-center mb-3">
+            <h1 className="text-xl font-bold text-yellow-400 mb-2">Multiplayer Challenge</h1>
             
-            {/* Player Scores - Real-time display */}
-            <div className={`grid gap-4 mb-4 ${playerCount === 2 ? 'grid-cols-2' : playerCount === 3 ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-4'}`}>
+            <div className={`grid gap-2 mb-3 ${playerCount <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {players.map((player) => (
-                <Card key={player.id} className="p-3 bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500">
+                <Card key={player.id} className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500">
                   <div className="text-center text-white">
-                    <div className="text-sm font-semibold">{player.name}</div>
-                    <div className="text-xl font-bold">{player.score}</div>
+                    <div className="text-xs font-semibold">{player.name}</div>
+                    <div className="text-lg font-bold">{player.score}</div>
                   </div>
                 </Card>
               ))}
             </div>
             
-            <div className="flex justify-center space-x-6 text-white">
+            <div className="flex justify-center space-x-4 text-white text-sm">
               <div className="text-center">
-                <div className="text-sm text-gray-300">Round</div>
-                <div className="text-xl font-bold">{gameState.round}</div>
+                <div className="text-xs text-gray-300">Round</div>
+                <div className="text-lg font-bold">{gameState.round}</div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-300">Time</div>
-                <div className={`text-xl font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : ''}`}>
+                <div className="text-xs text-gray-300">Time</div>
+                <div className={`text-lg font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : ''}`}>
                   {Math.floor(gameState.timeRemaining / 60)}:{(gameState.timeRemaining % 60).toString().padStart(2, '0')}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-300">Combinations</div>
-                <div className="text-xl font-bold text-green-400">
+                <div className="text-xs text-gray-300">Found</div>
+                <div className="text-lg font-bold text-green-400">
                   {foundCombinations.length}/{correctCombinations.length}
                 </div>
               </div>
@@ -358,37 +352,39 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
           </div>
 
           {/* Target Number */}
-          <Card className="mb-6 p-4 bg-yellow-400 border-yellow-500">
+          <Card className="mb-3 p-3 bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 shadow-lg">
             <div className="text-center">
-              <div className="text-sm font-semibold text-gray-800">TARGET</div>
+              <div className="text-sm font-bold text-gray-800">🎯 TARGET 🎯</div>
               <div className="text-3xl font-bold text-gray-900">{gameState.targetNumber}</div>
             </div>
           </Card>
 
-          {/* Pyramid */}
-          <div className="mb-6">
-            <PyramidGrid
-              blocks={gameState.blocks}
-              selectedBlocks={gameState.selectedBlocks}
-              onBlockClick={handleBlockClick}
-            />
+          {/* Compact Pyramid */}
+          <div className="mb-3 flex justify-center">
+            <div className="scale-75 -my-4">
+              <PyramidGrid
+                blocks={gameState.blocks}
+                selectedBlocks={gameState.selectedBlocks}
+                onBlockClick={handleBlockClick}
+              />
+            </div>
           </div>
 
-          {/* Letter Input */}
-          <div className="w-full max-w-md mb-4">
+          {/* Input and Submit */}
+          <div className="mb-3">
             <div className="flex items-center space-x-2">
               <Input
-                placeholder="Enter block letters (e.g., 'abc')"
+                placeholder="abc"
                 value={gameState.inputValue}
                 onChange={handleInputChange}
                 maxLength={3}
-                className="bg-gray-700 text-white border-yellow-500 focus:border-yellow-400"
+                className="bg-gray-700 text-white border-yellow-500 focus:border-yellow-400 text-center text-lg"
                 disabled={gameState.gameStatus !== 'playing'}
               />
               <Button
                 onClick={submitEquation}
                 disabled={gameState.selectedBlocks.length !== 3 || gameState.gameStatus !== 'playing'}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="bg-green-600 hover:bg-green-700 text-white px-4"
               >
                 Submit
               </Button>
@@ -397,10 +393,10 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
 
           {/* Selected Equation Preview */}
           {gameState.selectedBlocks.length > 0 && (
-            <Card className="mb-4 p-3 bg-gray-800 border-gray-600 w-full max-w-md">
+            <Card className="mb-3 p-2 bg-gray-800 border-gray-600">
               <div className="text-center text-white">
-                <div className="text-sm text-gray-300">Selected Equation:</div>
-                <div className="text-lg font-mono">
+                <div className="text-xs text-gray-300">Selected:</div>
+                <div className="text-sm font-mono">
                   {gameState.selectedBlocks.map((index, i) => (
                     <span key={index}>
                       {gameState.blocks[index]?.label}({gameState.blocks[index]?.value})
@@ -414,32 +410,31 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex space-x-4 mb-4">
+          <div className="flex space-x-2 mb-3">
             <Button 
               onClick={() => setGameState(prev => ({ ...prev, selectedBlocks: [], inputValue: '' }))}
               variant="outline"
-              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900"
+              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900 flex-1"
             >
-              Clear Selection
+              Clear
+            </Button>
+            <Button
+              onClick={() => navigate('/multiplayer')}
+              variant="outline"
+              className="border-gray-400 text-gray-400 hover:bg-gray-700 flex-1"
+            >
+              Back
             </Button>
           </div>
-          
-          <Button
-            onClick={() => navigate('/multiplayer')}
-            variant="outline"
-            className="border-gray-400 text-gray-400 hover:bg-gray-700"
-          >
-            Back to Multiplayer Menu
-          </Button>
 
           {/* Found Combinations */}
           {foundCombinations.length > 0 && (
-            <Card className="mt-4 p-3 bg-gray-800 border-gray-600 w-full max-w-md">
+            <Card className="p-2 bg-gray-800 border-gray-600">
               <div className="text-white">
-                <div className="text-sm text-gray-300 mb-2">Found Combinations:</div>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
+                <div className="text-xs text-gray-300 mb-1">✅ Found:</div>
+                <div className="grid grid-cols-4 gap-1">
                   {foundCombinations.map((combo, i) => (
-                    <div key={i} className="text-sm text-green-400 font-mono">
+                    <div key={i} className="text-xs text-green-400 font-mono bg-green-900/50 px-1 py-0.5 rounded text-center">
                       {combo.map(index => gameState.blocks[index]?.label).join('')}
                     </div>
                   ))}

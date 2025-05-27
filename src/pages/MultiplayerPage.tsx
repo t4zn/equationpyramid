@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,7 @@ interface RoomInfo {
 const MultiplayerPage = () => {
   const navigate = useNavigate();
   const { authState } = useAuth();
-  const [activeSection, setActiveSection] = useState<'main' | 'localGame' | 'onlineGame' | 'onlineRooms'>('main');
+  const [activeSection, setActiveSection] = useState<'main' | 'localGame' | 'onlineGame' | 'onlineRooms' | 'localPlayerSelect'>('main');
   const [roomCode, setRoomCode] = useState('');
   const [availableRooms, setAvailableRooms] = useState<RoomInfo[]>([]);
   const [createRoomDialogOpen, setCreateRoomDialogOpen] = useState(false);
@@ -44,7 +43,7 @@ const MultiplayerPage = () => {
     
     switch(action) {
       case 'local':
-        setActiveSection('localGame');
+        setActiveSection('localPlayerSelect');
         break;
       case 'online':
         // Generate mock rooms with realistic data
@@ -79,7 +78,7 @@ const MultiplayerPage = () => {
     
     toast({
       title: "Room Created Successfully!",
-      description: `Room created with code: ${generatedRoomCode}`,
+      description: `Room code: ${generatedRoomCode}`,
     });
     
     setCreateRoomDialogOpen(false);
@@ -96,7 +95,6 @@ const MultiplayerPage = () => {
       return;
     }
     
-    // Simulate room validation
     toast({
       title: "Joining Room...",
       description: "Connecting to the private room.",
@@ -310,11 +308,11 @@ const MultiplayerPage = () => {
 
   // Render active game screen
   if (activeSection === 'localGame') {
-    return <LocalMultiplayerGame playerCount={localPlayerCount} />;
+    return <MultiplayerGameScreen gameMode="local" playerCount={localPlayerCount} />;
   }
   
   if (activeSection === 'onlineGame') {
-    return <OnlineMultiplayerGame roomId={currentRoomId} playerCount={maxPlayers} />;
+    return <MultiplayerGameScreen gameMode="online" playerCount={maxPlayers} roomId={currentRoomId} />;
   }
 
   return (
@@ -325,16 +323,10 @@ const MultiplayerPage = () => {
       }}
     >
       {activeSection === 'main' && renderMainMenu()}
+      {activeSection === 'localPlayerSelect' && renderLocalPlayerSelection()}
       {activeSection === 'onlineRooms' && renderOnlineRooms()}
       
-      {/* Show player selection for local multiplayer */}
-      {activeSection === 'main' && renderLocalPlayerSelection && (
-        <div style={{ display: 'none' }}>
-          {renderLocalPlayerSelection()}
-        </div>
-      )}
-      
-      {/* Create Room Dialog - Simplified without room name */}
+      {/* Create Room Dialog */}
       <Dialog open={createRoomDialogOpen} onOpenChange={setCreateRoomDialogOpen}>
         <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 text-white border-2 border-yellow-500">
           <DialogHeader>
