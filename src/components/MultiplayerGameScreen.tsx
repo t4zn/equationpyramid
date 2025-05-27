@@ -64,7 +64,6 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
     const { blocks, targetNumber } = generatePyramid();
     const validCombinations = findValidCombinations(blocks, targetNumber);
     
-    // Limit to maximum 4 combinations
     const limitedCombinations = validCombinations.slice(0, 4);
     
     if (limitedCombinations.length === 0) {
@@ -277,7 +276,7 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-3 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 flex flex-col overflow-hidden">
       {/* Game Over Screen */}
       {gameState.gameStatus === 'completed' && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
@@ -303,65 +302,59 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
         </div>
       )}
 
-      {/* Main Game Content */}
+      {/* Main Game Content - Mobile Optimized */}
       {gameState.gameStatus !== 'completed' && (
-        <>
+        <div className="flex-1 flex flex-col h-screen max-h-screen">
           {/* Room Code Display */}
           {roomId && (
-            <Card className="mb-3 p-2 bg-gradient-to-r from-purple-600 to-purple-700 border-purple-500 shadow-lg">
+            <Card className="mb-2 p-2 bg-gradient-to-r from-purple-600 to-purple-700 border-purple-500 shadow-lg">
               <div className="text-center text-white">
                 <div className="text-xs font-semibold">Room Code</div>
-                <div className="text-lg font-bold tracking-wider">{roomId}</div>
+                <div className="text-sm font-bold tracking-wider">{roomId}</div>
               </div>
             </Card>
           )}
 
-          {/* Header with Player Scores */}
-          <div className="text-center mb-3">
-            <h1 className="text-xl font-bold text-yellow-400 mb-2">Multiplayer Challenge</h1>
-            
-            <div className={`grid gap-2 mb-3 ${playerCount <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+          {/* Header with Player Scores and Game Info */}
+          <div className="mb-2">
+            <div className={`grid gap-1 mb-2 ${playerCount <= 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
               {players.map((player) => (
-                <Card key={player.id} className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500">
+                <Card key={player.id} className="p-1 bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500">
                   <div className="text-center text-white">
-                    <div className="text-xs font-semibold">{player.name}</div>
-                    <div className="text-lg font-bold">{player.score}</div>
+                    <div className="text-xs font-semibold truncate">{player.name}</div>
+                    <div className="text-sm font-bold">{player.score}</div>
                   </div>
                 </Card>
               ))}
             </div>
             
-            <div className="flex justify-center space-x-4 text-white text-sm">
+            <div className="grid grid-cols-4 gap-1 text-white text-xs">
               <div className="text-center">
-                <div className="text-xs text-gray-300">Round</div>
-                <div className="text-lg font-bold">{gameState.round}</div>
+                <div className="text-gray-300">Round</div>
+                <div className="font-bold">{gameState.round}</div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-gray-300">Time</div>
-                <div className={`text-lg font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : ''}`}>
+                <div className="text-gray-300">Time</div>
+                <div className={`font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : ''}`}>
                   {Math.floor(gameState.timeRemaining / 60)}:{(gameState.timeRemaining % 60).toString().padStart(2, '0')}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-xs text-gray-300">Found</div>
-                <div className="text-lg font-bold text-green-400">
+                <div className="text-gray-300">Found</div>
+                <div className="font-bold text-green-400">
                   {foundCombinations.length}/{correctCombinations.length}
                 </div>
+              </div>
+              <div className="text-center">
+                <div className="text-gray-300">Target</div>
+                <div className="font-bold text-yellow-400">{gameState.targetNumber}</div>
               </div>
             </div>
           </div>
 
-          {/* Target Number */}
-          <Card className="mb-3 p-3 bg-gradient-to-r from-yellow-500 to-yellow-600 border-yellow-400 shadow-lg">
-            <div className="text-center">
-              <div className="text-sm font-bold text-gray-800">🎯 TARGET 🎯</div>
-              <div className="text-3xl font-bold text-gray-900">{gameState.targetNumber}</div>
-            </div>
-          </Card>
-
-          {/* Compact Pyramid */}
-          <div className="mb-3 flex justify-center">
-            <div className="scale-75 -my-4">
+          {/* Compact Pyramid - Reduced Size */}
+          <div className="flex-1 flex justify-center items-start mb-2">
+            <div className="scale-[0.6] -my-8">
               <PyramidGrid
                 blocks={gameState.blocks}
                 selectedBlocks={gameState.selectedBlocks}
@@ -371,20 +364,20 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
           </div>
 
           {/* Input and Submit */}
-          <div className="mb-3">
+          <div className="mb-2">
             <div className="flex items-center space-x-2">
               <Input
                 placeholder="abc"
                 value={gameState.inputValue}
                 onChange={handleInputChange}
                 maxLength={3}
-                className="bg-gray-700 text-white border-yellow-500 focus:border-yellow-400 text-center text-lg"
+                className="bg-gray-700 text-white border-yellow-500 focus:border-yellow-400 text-center text-lg h-10"
                 disabled={gameState.gameStatus !== 'playing'}
               />
               <Button
                 onClick={submitEquation}
                 disabled={gameState.selectedBlocks.length !== 3 || gameState.gameStatus !== 'playing'}
-                className="bg-green-600 hover:bg-green-700 text-white px-4"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 h-10"
               >
                 Submit
               </Button>
@@ -393,14 +386,14 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
 
           {/* Selected Equation Preview */}
           {gameState.selectedBlocks.length > 0 && (
-            <Card className="mb-3 p-2 bg-gray-800 border-gray-600">
+            <Card className="mb-2 p-2 bg-gray-800 border-gray-600">
               <div className="text-center text-white">
                 <div className="text-xs text-gray-300">Selected:</div>
                 <div className="text-sm font-mono">
                   {gameState.selectedBlocks.map((index, i) => (
                     <span key={index}>
                       {gameState.blocks[index]?.label}({gameState.blocks[index]?.value})
-                      {i < gameState.selectedBlocks.length - 1 ? ' ' : ''}
+                      {i < gameState.selectedBlocks.length - 1 ? ' + ' : ''}
                     </span>
                   ))}
                   {gameState.selectedBlocks.length === 3 && ' = ?'}
@@ -410,24 +403,24 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex space-x-2 mb-3">
+          <div className="flex space-x-2 mb-2">
             <Button 
               onClick={() => setGameState(prev => ({ ...prev, selectedBlocks: [], inputValue: '' }))}
               variant="outline"
-              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900 flex-1"
+              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900 flex-1 h-8 text-sm"
             >
               Clear
             </Button>
             <Button
               onClick={() => navigate('/multiplayer')}
               variant="outline"
-              className="border-gray-400 text-gray-400 hover:bg-gray-700 flex-1"
+              className="border-gray-400 text-gray-400 hover:bg-gray-700 flex-1 h-8 text-sm"
             >
               Back
             </Button>
           </div>
 
-          {/* Found Combinations */}
+          {/* Found Combinations - Compact */}
           {foundCombinations.length > 0 && (
             <Card className="p-2 bg-gray-800 border-gray-600">
               <div className="text-white">
@@ -442,7 +435,7 @@ export const MultiplayerGameScreen: React.FC<MultiplayerGameProps> = ({
               </div>
             </Card>
           )}
-        </>
+        </div>
       )}
     </div>
   );

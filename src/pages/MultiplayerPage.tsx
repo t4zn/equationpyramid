@@ -7,8 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Clock, Users, Trophy, ChevronLeft, Play } from 'lucide-react';
-import { LocalMultiplayerGame } from '@/components/LocalMultiplayerGame';
-import { OnlineMultiplayerGame } from '@/components/OnlineMultiplayerGame';
+import { MultiplayerGameScreen } from '@/components/MultiplayerGameScreen';
 
 interface RoomInfo {
   id: string;
@@ -46,7 +45,6 @@ const MultiplayerPage = () => {
         setActiveSection('localPlayerSelect');
         break;
       case 'online':
-        // Generate mock rooms with realistic data
         const mockRooms: RoomInfo[] = [
           { id: 'r1', name: 'Quick Match Room #1', players: 3, maxPlayers: 4, status: 'waiting' },
           { id: 'r2', name: 'Tournament Championship', players: 4, maxPlayers: 4, status: 'playing' },
@@ -72,7 +70,6 @@ const MultiplayerPage = () => {
   };
   
   const createPrivateRoom = () => {
-    // Generate room code automatically
     const generatedRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
     setCurrentRoomId(generatedRoomCode);
     
@@ -338,8 +335,8 @@ const MultiplayerPage = () => {
           <div className="space-y-6 py-4">
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-300">Maximum Players</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[2, 3, 4].map(count => (
+              <div className="grid grid-cols-2 gap-2">
+                {[2, 3].map(count => (
                   <Button 
                     key={count}
                     onClick={() => setMaxPlayers(count)}

@@ -2,53 +2,41 @@
 import { Block } from '../types/game';
 
 const operators = ['+', '-', '×', '÷'];
-const numbers = [-11, -10, -9, -5, -3, -1, +1, +3, +4, +5, +6, +7, +9, +11];
+const numbers = [-5, -3, -1, 1, 3, 4, 5, 6, 7, 9];
 
 export const generatePyramid = () => {
   let attempts = 0;
   const maxAttempts = 50;
   
   while (attempts < maxAttempts) {
-    const numbers: number[] = [];
-    const operators: string[] = [];
-    
-    // Generate 7 numbers (1-9)
-    for (let i = 0; i < 7; i++) {
-      numbers.push(Math.floor(Math.random() * 9) + 1);
-    }
-    
-    // Generate 3 operators with better distribution
-    const operatorPool = ['+', '+', '-', '-', '*', '/'];
-    for (let i = 0; i < 3; i++) {
-      const randomIndex = Math.floor(Math.random() * operatorPool.length);
-      operators.push(operatorPool[randomIndex]);
-      operatorPool.splice(randomIndex, 1);
-    }
-    
-    // Create blocks with letter labels
     const blocks: Block[] = [];
     const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     
-    // Add number blocks (7 numbers)
-    for (let i = 0; i < numbers.length; i++) {
+    // Generate 7 number blocks with combined operator+number format
+    for (let i = 0; i < 7; i++) {
+      const number = numbers[Math.floor(Math.random() * numbers.length)];
+      const operator = operators[Math.floor(Math.random() * operators.length)];
+      
       blocks.push({
-        value: numbers[i].toString(),
+        value: `${operator}${number}`,
         type: 'number',
-        numericValue: numbers[i],
+        numericValue: number,
         label: letters[i]
       });
     }
     
-    // Add operator blocks (3 operators)
-    for (let i = 0; i < operators.length; i++) {
+    // Generate 3 pure number blocks (without operators)
+    for (let i = 7; i < 10; i++) {
+      const number = Math.floor(Math.random() * 9) + 1;
       blocks.push({
-        value: operators[i],
-        type: 'operator',
-        label: letters[7 + i]
+        value: number.toString(),
+        type: 'number',
+        numericValue: number,
+        label: letters[i]
       });
     }
     
-    // Generate target number (10-50 range for better gameplay)
+    // Generate target number
     const targetNumber = Math.floor(Math.random() * 41) + 10;
     
     // Check if we can find valid combinations
@@ -69,19 +57,19 @@ export const generatePyramid = () => {
 
 const generateFallbackPyramid = () => {
   const blocks: Block[] = [
-    { value: '5', type: 'number', numericValue: 5, label: 'a' },
-    { value: '3', type: 'number', numericValue: 3, label: 'b' },
-    { value: '2', type: 'number', numericValue: 2, label: 'c' },
-    { value: '4', type: 'number', numericValue: 4, label: 'd' },
+    { value: '+5', type: 'number', numericValue: 5, label: 'a' },
+    { value: '-3', type: 'number', numericValue: -3, label: 'b' },
+    { value: '×2', type: 'number', numericValue: 2, label: 'c' },
+    { value: '+4', type: 'number', numericValue: 4, label: 'd' },
     { value: '6', type: 'number', numericValue: 6, label: 'e' },
     { value: '1', type: 'number', numericValue: 1, label: 'f' },
     { value: '7', type: 'number', numericValue: 7, label: 'g' },
-    { value: '+', type: 'operator', label: 'h' },
-    { value: '-', type: 'operator', label: 'i' },
-    { value: '*', type: 'operator', label: 'j' }
+    { value: '3', type: 'number', numericValue: 3, label: 'h' },
+    { value: '2', type: 'number', numericValue: 2, label: 'i' },
+    { value: '8', type: 'number', numericValue: 8, label: 'j' }
   ];
   
-  return { blocks, targetNumber: 8 }; // 5 + 3 = 8, 6 + 2 = 8, etc.
+  return { blocks, targetNumber: 15 };
 };
 
 export const findValidCombinations = (blocks: Block[], target: number): number[][] => {
@@ -115,72 +103,23 @@ export const evaluateEquation = (selectedIndices: number[], blocks: Block[]) => 
   
   const [first, second, third] = selectedIndices.map(i => blocks[i]);
   
-  // First block must be a number
-  if (first.type !== 'number') {
-    return { isValid: false, message: 'First block must be a number' };
-  }
+  // All blocks are numbers, just add them
+  const result = (first.numericValue || 0) + (second.numericValue || 0) + (third.numericValue || 0);
   
-  let result = first.numericValue || 0;
+  const equation = `${first.label}(${first.value}) + ${second.label}(${second.value}) + ${third.label}(${third.value}) = ${result}`;
   
-  try {
-    // Process second block
-    if (second.type === 'operator') {
-      // Second block is operator, third must be number
-      if (third.type !== 'number') {
-        return { isValid: false, message: 'After operator, need a number' };
-      }
-      
-      const operator = second.value;
-      const operand = third.numericValue || 0;
-      
-      switch (operator) {
-        case '+':
-          result = result + operand;
-          break;
-        case '-':
-          result = result - operand;
-          break;
-        case '×':
-        case '*':
-          result = result * operand;
-          break;
-        case '÷':
-        case '/':
-          if (operand === 0) {
-            return { isValid: false, message: 'Division by zero!' };
-          }
-          result = result / operand;
-          break;
-        default:
-          return { isValid: false, message: 'Invalid operator' };
-      }
-    } else if (second.type === 'number') {
-      // Second block is number
-      if (third.type === 'operator') {
-        return { isValid: false, message: 'Cannot have operator at end' };
-      } else {
-        // Both second and third are numbers, just add them
-        result = result + (second.numericValue || 0) + (third.numericValue || 0);
-      }
-    }
-    
-    const equation = `${first.label}(${first.value}) ${second.label}(${second.value}) ${third.label}(${third.value}) = ${result}`;
-    
-    return {
-      isValid: true,
-      result: Math.round(result * 100) / 100, // Round to 2 decimal places
-      equation,
-      message: 'Valid equation!'
-    };
-  } catch (error) {
-    return { isValid: false, message: 'Invalid equation' };
-  }
+  return {
+    isValid: true,
+    result: Math.round(result * 100) / 100,
+    equation,
+    message: 'Valid equation!'
+  };
 };
 
 // Convert letter input to block indices
 export const parseLetterInput = (input: string, blocks: Block[]): number[] => {
   const letters = input.toLowerCase().replace(/[^a-j]/g, '').split('');
-  const uniqueLetters = [...new Set(letters)]; // Remove duplicates
+  const uniqueLetters = [...new Set(letters)];
   
   if (uniqueLetters.length > 3) {
     return uniqueLetters.slice(0, 3).map(letter => {
