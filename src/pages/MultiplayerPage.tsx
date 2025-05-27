@@ -23,7 +23,6 @@ const MultiplayerPage = () => {
   const navigate = useNavigate();
   const { authState } = useAuth();
   const [activeSection, setActiveSection] = useState<'main' | 'localGame' | 'onlineGame' | 'onlineRooms'>('main');
-  const [roomName, setRoomName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [availableRooms, setAvailableRooms] = useState<RoomInfo[]>([]);
   const [createRoomDialogOpen, setCreateRoomDialogOpen] = useState(false);
@@ -33,7 +32,7 @@ const MultiplayerPage = () => {
   const [currentRoomId, setCurrentRoomId] = useState('');
   
   const handleMultiplayerAction = (action: string) => {
-    if (!authState.user) {
+    if (!authState.user && !authState.loading) {
       toast({
         title: "Authentication Required",
         description: "Please login to use multiplayer features.",
@@ -74,22 +73,13 @@ const MultiplayerPage = () => {
   };
   
   const createPrivateRoom = () => {
-    if (!roomName.trim()) {
-      toast({
-        title: "Room Name Required",
-        description: "Please enter a name for your private room.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+    // Generate room code automatically
     const generatedRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setRoomCode(generatedRoomCode);
     setCurrentRoomId(generatedRoomCode);
     
     toast({
       title: "Room Created Successfully!",
-      description: `Room "${roomName}" created. Code: ${generatedRoomCode}`,
+      description: `Room created with code: ${generatedRoomCode}`,
     });
     
     setCreateRoomDialogOpen(false);
@@ -101,7 +91,7 @@ const MultiplayerPage = () => {
       toast({
         title: "Room Code Required",
         description: "Please enter the room code to join.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -121,10 +111,6 @@ const MultiplayerPage = () => {
         description: `Connected to room ${roomCode}`,
       });
     }, 1500);
-  };
-  
-  const startLocalMultiplayerGame = () => {
-    setActiveSection('localGame');
   };
   
   const joinOnlineQuickMatch = (roomId: string) => {
@@ -206,6 +192,54 @@ const MultiplayerPage = () => {
     </Card>
   );
   
+  const renderLocalPlayerSelection = () => (
+    <Card className="w-full max-w-lg bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-blue-500 shadow-2xl">
+      <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-500 text-white">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="mr-3 text-white hover:bg-white/20" 
+            onClick={() => setActiveSection('main')}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+          <CardTitle className="text-2xl font-bold">
+            Local Multiplayer
+          </CardTitle>
+        </div>
+        <CardDescription className="text-blue-100">
+          Select number of players for same-device play
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 p-6">
+        <div className="space-y-4">
+          <label className="text-sm font-semibold text-gray-300">Number of Players</label>
+          <div className="grid grid-cols-2 gap-3">
+            {[2, 3].map(count => (
+              <Button 
+                key={count}
+                onClick={() => setLocalPlayerCount(count)}
+                variant={localPlayerCount === count ? "default" : "outline"}
+                className={localPlayerCount === count 
+                  ? "bg-blue-500 text-white border-blue-400 py-8 text-xl" 
+                  : "border-gray-500 text-gray-300 hover:border-blue-500 py-8 text-xl"}
+              >
+                {count} Players
+              </Button>
+            ))}
+          </div>
+        </div>
+        <Button
+          onClick={() => setActiveSection('localGame')}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-4 text-lg"
+        >
+          Start Local Game ({localPlayerCount} Players)
+        </Button>
+      </CardContent>
+    </Card>
+  );
+  
   const renderOnlineRooms = () => (
     <Card className="w-full max-w-2xl bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-yellow-500 shadow-2xl">
       <CardHeader className="bg-gradient-to-r from-green-600 to-green-500 text-white">
@@ -261,33 +295,7 @@ const MultiplayerPage = () => {
               </div>
             </div>
           ))}
-          
-          {availableRooms.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <Trophy className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p className="text-xl mb-2">No active rooms found</p>
-              <p className="text-sm">Try again later or create your own room</p>
-            </div>
-          )}
         </div>
-        
-        <Button
-          onClick={() => {
-            const randomRoom = availableRooms.find(r => r.status === 'waiting' && r.players < r.maxPlayers);
-            if (randomRoom) {
-              joinOnlineQuickMatch(randomRoom.id);
-            } else {
-              toast({
-                title: "No Available Rooms",
-                description: "All rooms are full or in progress. Try creating your own!",
-                variant: "destructive",
-              });
-            }
-          }}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 text-lg"
-        >
-          Quick Join Any Available Room
-        </Button>
         
         <Button 
           onClick={() => setActiveSection('main')} 
@@ -306,7 +314,7 @@ const MultiplayerPage = () => {
   }
   
   if (activeSection === 'onlineGame') {
-    return <OnlineMultiplayerGame roomId={currentRoomId} playerCount={4} />;
+    return <OnlineMultiplayerGame roomId={currentRoomId} playerCount={maxPlayers} />;
   }
 
   return (
@@ -319,29 +327,27 @@ const MultiplayerPage = () => {
       {activeSection === 'main' && renderMainMenu()}
       {activeSection === 'onlineRooms' && renderOnlineRooms()}
       
-      {/* Create Room Dialog */}
+      {/* Show player selection for local multiplayer */}
+      {activeSection === 'main' && renderLocalPlayerSelection && (
+        <div style={{ display: 'none' }}>
+          {renderLocalPlayerSelection()}
+        </div>
+      )}
+      
+      {/* Create Room Dialog - Simplified without room name */}
       <Dialog open={createRoomDialogOpen} onOpenChange={setCreateRoomDialogOpen}>
         <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 text-white border-2 border-yellow-500">
           <DialogHeader>
             <DialogTitle className="text-2xl text-yellow-400">Create Private Room</DialogTitle>
             <DialogDescription className="text-gray-300 text-base">
-              Create your own game room and invite friends with a room code
+              Create your own game room and invite friends
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-300">Room Name</label>
-              <Input
-                placeholder="My Awesome Pyramid Challenge"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white focus:border-yellow-500 text-lg"
-              />
-            </div>
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-300">Maximum Players</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[2, 3, 4, 5].map(count => (
+              <div className="grid grid-cols-3 gap-2">
+                {[2, 3, 4].map(count => (
                   <Button 
                     key={count}
                     onClick={() => setMaxPlayers(count)}

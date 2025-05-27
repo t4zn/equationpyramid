@@ -3,100 +3,84 @@ import { Block } from '../types/game';
 const operators = ['+', '-', '×', '÷'];
 const numbers = [-11, -10, -9, -5, -3, -1, +1, +3, +4, +5, +6, +7, +9, +11];
 
-export const generatePyramid = (): { blocks: Block[], targetNumber: number } => {
-  const blocks: Block[] = [];
+export const generatePyramid = () => {
+  let attempts = 0;
+  const maxAttempts = 50;
   
-  // Generate 10 blocks for the pyramid (4 + 3 + 2 + 1)
-  const shuffledNumbers = [...numbers].sort(() => Math.random() - 0.5);
+  while (attempts < maxAttempts) {
+    const numbers: number[] = [];
+    const operators: string[] = [];
+    
+    // Generate 7 numbers (1-9)
+    for (let i = 0; i < 7; i++) {
+      numbers.push(Math.floor(Math.random() * 9) + 1);
+    }
+    
+    // Generate 3 operators with better distribution
+    const operatorPool = ['+', '+', '-', '-', '*', '/'];
+    for (let i = 0; i < 3; i++) {
+      const randomIndex = Math.floor(Math.random() * operatorPool.length);
+      operators.push(operatorPool[randomIndex]);
+      operatorPool.splice(randomIndex, 1);
+    }
+    
+    // Create blocks with letter labels
+    const blocks: Block[] = [];
+    const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
+    
+    // Add number blocks (7 numbers)
+    for (let i = 0; i < numbers.length; i++) {
+      blocks.push({
+        value: numbers[i].toString(),
+        type: 'number',
+        numericValue: numbers[i],
+        label: letters[i]
+      });
+    }
+    
+    // Add operator blocks (3 operators)
+    for (let i = 0; i < operators.length; i++) {
+      blocks.push({
+        value: operators[i],
+        type: 'operator',
+        label: letters[7 + i]
+      });
+    }
+    
+    // Generate target number (10-50 range for better gameplay)
+    const targetNumber = Math.floor(Math.random() * 41) + 10;
+    
+    // Check if we can find valid combinations
+    const validCombinations = findValidCombinations(blocks, targetNumber);
+    
+    // Accept if we have 2-4 combinations
+    if (validCombinations.length >= 2 && validCombinations.length <= 4) {
+      return { blocks, targetNumber };
+    }
+    
+    attempts++;
+  }
   
-  // Force more multiplication and division operators
-  // Create an array with guaranteed × and ÷ operators
-  const guaranteedOperators = ['×', '×', '÷', '÷', '+', '-']; // 2 each of × and ÷, 1 each of + and -
-  const additionalOperators = ['+', '-', '×', '÷']; // Additional operators to fill
-  
-  // Shuffle both arrays
-  const shuffledGuaranteed = guaranteedOperators.sort(() => Math.random() - 0.5);
-  const shuffledAdditional = additionalOperators.sort(() => Math.random() - 0.5);
-  
-  // Combine for final operator array
-  const finalOperators = [...shuffledGuaranteed, ...shuffledAdditional].slice(0, 4);
-  
-  // Letter labels a-j for blocks
-  const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
-  
-  // Define pyramid structure with row information
-  const pyramidStructure = [
-    { row: 1, positions: [0] },
-    { row: 2, positions: [1, 2] },
-    { row: 3, positions: [3, 4, 5] },
-    { row: 4, positions: [6, 7, 8, 9] }
+  // Fallback if no good combination found
+  console.log('Using fallback pyramid generation');
+  return generateFallbackPyramid();
+};
+
+const generateFallbackPyramid = () => {
+  const blocks: Block[] = [
+    { value: '5', type: 'number', numericValue: 5, label: 'a' },
+    { value: '3', type: 'number', numericValue: 3, label: 'b' },
+    { value: '2', type: 'number', numericValue: 2, label: 'c' },
+    { value: '4', type: 'number', numericValue: 4, label: 'd' },
+    { value: '6', type: 'number', numericValue: 6, label: 'e' },
+    { value: '1', type: 'number', numericValue: 1, label: 'f' },
+    { value: '7', type: 'number', numericValue: 7, label: 'g' },
+    { value: '+', type: 'operator', label: 'h' },
+    { value: '-', type: 'operator', label: 'i' },
+    { value: '*', type: 'operator', label: 'j' }
   ];
   
-  // Ensure operators are distributed across different rows
-  const operatorPositions = [];
-  
-  // Place one operator in each row to ensure distribution
-  for (let rowInfo of pyramidStructure) {
-    if (operatorPositions.length < 4) {
-      const randomPosInRow = rowInfo.positions[Math.floor(Math.random() * rowInfo.positions.length)];
-      // Avoid duplicates
-      if (!operatorPositions.includes(randomPosInRow)) {
-        operatorPositions.push(randomPosInRow);
-      }
-    }
-  }
-  
-  // If we need more operators, add them randomly from remaining positions
-  while (operatorPositions.length < 4) {
-    const randomPos = Math.floor(Math.random() * 10);
-    if (!operatorPositions.includes(randomPos)) {
-      operatorPositions.push(randomPos);
-    }
-  }
-  
-  // Create blocks with better distribution
-  for (let i = 0; i < 10; i++) {
-    const operatorIndex = operatorPositions.indexOf(i);
-    
-    if (operatorIndex !== -1) {
-      // This position should be an operator
-      const operator = finalOperators[operatorIndex];
-      const num = Math.abs(shuffledNumbers[i % shuffledNumbers.length]);
-      blocks.push({
-        value: `${operator}${num}`,
-        type: 'operator',
-        numericValue: num,
-        label: letters[i]
-      });
-    } else {
-      // This position should be a number
-      const num = shuffledNumbers[i % shuffledNumbers.length];
-      blocks.push({
-        value: num > 0 ? `+${num}` : `${num}`,
-        type: 'number',
-        numericValue: num,
-        label: letters[i]
-      });
-    }
-  }
-  
-  // Generate target number
-  const targetNumber = Math.floor(Math.random() * 30) - 10; // Range from -10 to 19
-  
-  // Check if there's at least one valid combination
-  const validCombinations = findValidCombinations(blocks, targetNumber);
-  
-  // If no valid combinations, recursively regenerate
-  if (validCombinations.length === 0) {
-    return generatePyramid();
-  }
-  
-  console.log('Generated pyramid with operators:', 
-    blocks.filter(b => b.type === 'operator').map(b => b.value),
-    'Valid combinations:', validCombinations.length
-  );
-  
-  return { blocks, targetNumber };
+  return { blocks, targetNumber: 8 }; // 5 + 3 = 8, 6 + 2 = 8, etc.
 };
 
 export const findValidCombinations = (blocks: Block[], target: number): number[][] => {
