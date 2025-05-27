@@ -24,22 +24,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check active session and set user
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          const user: User = {
+            id: session.user.id,
+            email: session.user.email,
+            username: session.user.user_metadata?.username
+          };
+          
+          setAuthState({
+            user,
+            loading: false,
+            error: null
+          });
+        } else {
+          setAuthState({
+            user: null,
+            loading: false,
+            error: null
+          });
+        }
+      }
+    );
+    
+    // THEN check for existing session
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', session.user.id)
-            .single();
-            
           const user: User = {
             id: session.user.id,
             email: session.user.email,
-            username: profile?.username
+            username: session.user.user_metadata?.username
           };
           
           setAuthState({
@@ -65,37 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     
     checkSession();
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', session.user.id)
-            .single();
-            
-          const user: User = {
-            id: session.user.id,
-            email: session.user.email,
-            username: profile?.username
-          };
-          
-          setAuthState({
-            user,
-            loading: false,
-            error: null
-          });
-        } else {
-          setAuthState({
-            user: null,
-            loading: false,
-            error: null
-          });
-        }
-      }
-    );
     
     return () => {
       subscription.unsubscribe();
@@ -207,6 +195,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setAuthState(prev => ({ ...prev, loading: false }));
     }
   };
 
