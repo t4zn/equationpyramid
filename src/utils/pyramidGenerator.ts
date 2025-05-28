@@ -2,7 +2,7 @@
 import { Block } from '../types/game';
 
 const operators = ['+', '-', '×', '÷'];
-const numbers = [-5, -3, -1, 1, 3, 4, 5, 6, 7, 9];
+const baseNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export const generatePyramid = () => {
   let attempts = 0;
@@ -12,23 +12,38 @@ export const generatePyramid = () => {
     const blocks: Block[] = [];
     const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     
-    // Generate 7 blocks with operator+number format (like +5, -3, ×6, etc.)
+    // Generate 7 blocks with operator+number format - ensure even distribution
+    const operatorCounts = { '+': 0, '-': 0, '×': 0, '÷': 0 };
+    
     for (let i = 0; i < 7; i++) {
-      const number = numbers[Math.floor(Math.random() * numbers.length)];
-      const operator = operators[Math.floor(Math.random() * operators.length)];
+      const number = baseNumbers[Math.floor(Math.random() * baseNumbers.length)];
+      
+      // Ensure at least one of each operator
+      let operator;
+      if (i < 4) {
+        operator = operators[i];
+      } else {
+        // For remaining blocks, pick randomly but prefer less used operators
+        const availableOps = operators.filter(op => operatorCounts[op] < 2);
+        operator = availableOps.length > 0 
+          ? availableOps[Math.floor(Math.random() * availableOps.length)]
+          : operators[Math.floor(Math.random() * operators.length)];
+      }
+      
+      operatorCounts[operator]++;
       
       blocks.push({
-        value: `${operator}${Math.abs(number)}`, // Always show positive numbers with operators
+        value: `${operator}${number}`,
         type: 'number',
-        numericValue: operator === '-' ? -Math.abs(number) : 
-                     operator === '+' ? Math.abs(number) :
-                     operator === '×' ? Math.abs(number) :
-                     operator === '÷' ? Math.abs(number) : Math.abs(number),
+        numericValue: operator === '-' ? -number : 
+                     operator === '+' ? number :
+                     operator === '×' ? number :
+                     operator === '÷' ? number : number,
         label: letters[i]
       });
     }
     
-    // Generate 3 pure number blocks (without operators, just numbers)
+    // Generate 3 pure number blocks (without operators)
     for (let i = 7; i < 10; i++) {
       const number = Math.floor(Math.random() * 9) + 1;
       blocks.push({
@@ -42,10 +57,9 @@ export const generatePyramid = () => {
     // Generate target number
     const targetNumber = Math.floor(Math.random() * 41) + 10;
     
-    // Check if we can find valid combinations (limit to 4 max)
+    // Check if we can find valid combinations
     const validCombinations = findValidCombinations(blocks, targetNumber);
     
-    // Accept if we have 2-4 combinations
     if (validCombinations.length >= 2 && validCombinations.length <= 4) {
       return { blocks, targetNumber };
     }
@@ -53,8 +67,7 @@ export const generatePyramid = () => {
     attempts++;
   }
   
-  // Fallback if no good combination found
-  console.log('Using fallback pyramid generation');
+  // Fallback
   return generateFallbackPyramid();
 };
 
@@ -63,12 +76,12 @@ const generateFallbackPyramid = () => {
     { value: '+5', type: 'number', numericValue: 5, label: 'a' },
     { value: '-3', type: 'number', numericValue: -3, label: 'b' },
     { value: '×2', type: 'number', numericValue: 2, label: 'c' },
-    { value: '+4', type: 'number', numericValue: 4, label: 'd' },
-    { value: '×7', type: 'number', numericValue: 7, label: 'e' },
-    { value: '+3', type: 'number', numericValue: 3, label: 'f' },
-    { value: '×1', type: 'number', numericValue: 1, label: 'g' },
+    { value: '÷4', type: 'number', numericValue: 4, label: 'd' },
+    { value: '+7', type: 'number', numericValue: 7, label: 'e' },
+    { value: '-1', type: 'number', numericValue: -1, label: 'f' },
+    { value: '×3', type: 'number', numericValue: 3, label: 'g' },
     { value: '2', type: 'number', numericValue: 2, label: 'h' },
-    { value: '9', type: 'number', numericValue: 9, label: 'i' },
+    { value: '6', type: 'number', numericValue: 6, label: 'i' },
     { value: '1', type: 'number', numericValue: 1, label: 'j' }
   ];
   
@@ -78,7 +91,6 @@ const generateFallbackPyramid = () => {
 export const findValidCombinations = (blocks: Block[], target: number): number[][] => {
   const validCombinations: number[][] = [];
   
-  // Check all possible 3-block combinations
   for (let i = 0; i < blocks.length; i++) {
     for (let j = 0; j < blocks.length; j++) {
       for (let k = 0; k < blocks.length; k++) {
@@ -86,7 +98,6 @@ export const findValidCombinations = (blocks: Block[], target: number): number[]
           const result = evaluateEquation([i, j, k], blocks);
           if (result.isValid && result.result === target) {
             validCombinations.push([i, j, k]);
-            // Limit to maximum 4 combinations
             if (validCombinations.length >= 4) {
               return validCombinations;
             }
@@ -106,7 +117,6 @@ export const evaluateEquation = (selectedIndices: number[], blocks: Block[]) => 
   
   const [first, second, third] = selectedIndices.map(i => blocks[i]);
   
-  // All blocks are numbers, just add them
   const result = (first.numericValue || 0) + (second.numericValue || 0) + (third.numericValue || 0);
   
   const equation = `${first.label}(${first.value}) + ${second.label}(${second.value}) + ${third.label}(${third.value}) = ${result}`;
@@ -119,7 +129,6 @@ export const evaluateEquation = (selectedIndices: number[], blocks: Block[]) => 
   };
 };
 
-// Convert letter input to block indices
 export const parseLetterInput = (input: string, blocks: Block[]): number[] => {
   const letters = input.toLowerCase().replace(/[^a-j]/g, '').split('');
   const uniqueLetters = [...new Set(letters)];

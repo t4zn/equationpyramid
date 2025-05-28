@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { BackButton } from '@/components/BackButton';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Trophy, Medal, Award, Home } from 'lucide-react';
+import { Trophy, Medal, Award } from 'lucide-react';
 
 interface LeaderboardEntry {
   id: string;
@@ -28,10 +29,12 @@ const LeaderboardsPage = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // First get leaderboards
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('leaderboards')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(username)
+        `)
         .order('score', { ascending: false })
         .limit(10);
 
@@ -41,28 +44,12 @@ const LeaderboardsPage = () => {
         return;
       }
 
-      // Then get profiles for usernames
-      const userIds = leaderboardData?.map(entry => entry.user_id) || [];
-      if (userIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username')
-          .in('id', userIds);
+      const combinedData = leaderboardData?.map(entry => ({
+        ...entry,
+        username: entry.profiles?.username || 'Anonymous'
+      })) || [];
 
-        if (profilesError) {
-          console.error('Error fetching profiles:', profilesError);
-        }
-
-        // Combine the data
-        const combinedData = leaderboardData?.map(entry => ({
-          ...entry,
-          username: profilesData?.find(profile => profile.id === entry.user_id)?.username || 'Anonymous'
-        })) || [];
-
-        setLeaderboard(combinedData);
-      } else {
-        setLeaderboard([]);
-      }
+      setLeaderboard(combinedData);
     } catch (error) {
       console.error('Error in fetchLeaderboard:', error);
       setLeaderboard([]);
@@ -89,8 +76,10 @@ const LeaderboardsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 sm:p-4">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 sm:p-4 relative">
+      <BackButton onClick={() => navigate('/home')} />
+      
+      <div className="max-w-lg mx-auto pt-16">
         <Card className="bg-gradient-to-br from-gray-800 to-gray-700 border-2 border-yellow-500 shadow-2xl">
           <CardHeader className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-black p-4">
             <CardTitle className="text-xl sm:text-2xl font-bold text-center flex items-center justify-center">
@@ -106,7 +95,7 @@ const LeaderboardsPage = () => {
                 <p className="text-gray-400 text-sm">Be the first to set a high score.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {leaderboard.map((entry, index) => (
                   <div
                     key={entry.id}
@@ -143,16 +132,6 @@ const LeaderboardsPage = () => {
                 ))}
               </div>
             )}
-            
-            <div className="mt-6 flex justify-center">
-              <Button
-                onClick={() => navigate('/home')}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-2 text-base font-semibold flex items-center w-full sm:w-auto"
-              >
-                <Home className="mr-2" size={18} />
-                Back to Home
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>

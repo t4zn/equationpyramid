@@ -1,451 +1,262 @@
+
 import React, { useState, useEffect } from 'react';
 import { PyramidGrid } from './PyramidGrid';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { BackButton } from '@/components/BackButton';
+import { CorrectCombinations } from '@/components/CorrectCombinations';
+import { generatePyramid, evaluateEquation, parseLetterInput } from '@/utils/pyramidGenerator';
+import { Block } from '@/types/game';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { GameState } from '../types/game';
-import { generatePyramid, evaluateEquation, parseLetterInput, findValidCombinations } from '../utils/pyramidGenerator';
-import { toast } from '@/hooks/use-toast';
+import { RefreshCw, Target } from 'lucide-react';
 
-export const GameScreen: React.FC = () => {
-  const { authState } = useAuth();
+const GameScreen = () => {
   const navigate = useNavigate();
-  
-  const [gameState, setGameState] = useState<GameState>({
-    blocks: [],
-    targetNumber: 0,
-    selectedBlocks: [],
-    currentEquation: '',
-    score: 0,
-    timeRemaining: 120,
-    gameStatus: 'playing',
-    round: 1,
-    inputValue: '',
-    history: []
-  });
-
-  const [correctCombinations, setCorrectCombinations] = useState<number[][]>([]);
-  const [foundCombinations, setFoundCombinations] = useState<number[][]>([]);
+  const { authState } = useAuth();
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [targetNumber, setTargetNumber] = useState(0);
+  const [selectedBlocks, setSelectedBlocks] = useState<number[]>([]);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [score, setScore] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
+  const [letterInput, setLetterInput] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [correctCombinations, setCorrectCombinations] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!authState.user && !authState.loading) {
-      navigate('/login');
-    }
-  }, [authState.user, authState.loading, navigate]);
-
-  const initializeGame = () => {
-    const { blocks, targetNumber } = generatePyramid();
-    const validCombinations = findValidCombinations(blocks, targetNumber);
-    
-    if (validCombinations.length === 0) {
-      initializeGame();
-      return;
-    }
-    
-    setGameState(prev => ({
-      ...prev,
-      blocks,
-      targetNumber,
-      selectedBlocks: [],
-      currentEquation: '',
-      timeRemaining: 120,
-      inputValue: '',
-      history: []
-    }));
-    
-    setCorrectCombinations(validCombinations);
-    setFoundCombinations([]);
-  };
-
-  useEffect(() => {
-    initializeGame();
+    generateNewPyramid();
   }, []);
 
-  useEffect(() => {
-    if (gameState.timeRemaining > 0 && gameState.gameStatus === 'playing') {
-      const timer = setTimeout(() => {
-        setGameState(prev => ({
-          ...prev,
-          timeRemaining: prev.timeRemaining - 1
-        }));
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (gameState.timeRemaining === 0) {
-      setGameState(prev => ({ ...prev, gameStatus: 'completed' }));
-      toast({
-        title: "Time's up!",
-        description: `Final score: ${gameState.score}`,
-        variant: "destructive"
-      });
-      
-      if (authState.user) {
-        saveScore();
-      }
-    }
-  }, [gameState.timeRemaining, gameState.gameStatus]);
-
-  const saveScore = async () => {
-    if (!authState.user) return;
-    
-    try {
-      await supabase.from('leaderboards').insert({
-        user_id: authState.user.id,
-        score: gameState.score,
-        rounds_completed: gameState.round - 1
-      });
-      
-      toast({
-        title: "Score saved",
-        description: "Your score has been saved to the leaderboard",
-      });
-    } catch (error) {
-      console.error('Error saving score:', error);
-      toast({
-        title: "Failed to save score",
-        description: "There was an error saving your score",
-        variant: "destructive"
-      });
-    }
+  const generateNewPyramid = () => {
+    const pyramid = generatePyramid();
+    setBlocks(pyramid.blocks);
+    setTargetNumber(pyramid.targetNumber);
+    setSelectedBlocks([]);
+    setLetterInput('');
+    setFeedback('');
   };
 
   const handleBlockClick = (index: number) => {
-    if (gameState.gameStatus !== 'playing') return;
-    
-    setGameState(prev => {
-      const newSelected = [...prev.selectedBlocks];
-      
-      if (newSelected.includes(index)) {
-        const indexToRemove = newSelected.indexOf(index);
-        newSelected.splice(indexToRemove, 1);
-      } else if (newSelected.length < 3) {
-        newSelected.push(index);
-      } else {
-        newSelected.shift();
-        newSelected.push(index);
-      }
-      
-      const inputValue = newSelected.map(i => prev.blocks[i].label).join('');
-      
-      return { 
-        ...prev, 
-        selectedBlocks: newSelected,
-        inputValue
-      };
-    });
-  };
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toLowerCase();
-    
-    setGameState(prev => {
-      const selectedIndices = parseLetterInput(value, prev.blocks);
-      const validIndices = selectedIndices.filter(index => index !== -1);
-      
-      return {
-        ...prev,
-        inputValue: value,
-        selectedBlocks: validIndices
-      };
-    });
+    if (selectedBlocks.includes(index)) {
+      setSelectedBlocks(selectedBlocks.filter(i => i !== index));
+    } else if (selectedBlocks.length < 3) {
+      setSelectedBlocks([...selectedBlocks, index]);
+    }
   };
 
-  const submitEquation = () => {
-    if (gameState.selectedBlocks.length !== 3) {
-      toast({
-        title: "Invalid selection",
-        description: "Please select exactly 3 blocks",
-        variant: "destructive"
-      });
+  const handleSubmit = () => {
+    if (selectedBlocks.length !== 3) {
+      setFeedback('Please select exactly 3 blocks');
       return;
     }
 
-    const result = evaluateEquation(gameState.selectedBlocks, gameState.blocks);
+    const result = evaluateEquation(selectedBlocks, blocks);
     
     if (!result.isValid) {
-      toast({
-        title: "Invalid equation",
-        description: result.message,
-        variant: "destructive"
-      });
-      
-      setGameState(prev => ({ 
-        ...prev, 
-        score: Math.max(0, prev.score - 5),
-        selectedBlocks: [],
-        inputValue: '',
-        history: [
-          ...prev.history,
-          {
-            equation: result.equation || 'Invalid',
-            result: result.result || 0,
-            success: false
-          }
-        ]
-      }));
+      setFeedback(result.message || 'Invalid equation');
       return;
     }
 
-    if (result.result === gameState.targetNumber) {
-      const combinationExists = foundCombinations.some(combo => 
-        combo.length === gameState.selectedBlocks.length &&
-        combo.every(val => gameState.selectedBlocks.includes(val))
-      );
+    if (result.result === targetNumber) {
+      const newScore = score + (10 * currentRound);
+      setScore(newScore);
+      setCorrectCombinations([...correctCombinations, result.equation || '']);
+      setFeedback(`Correct! +${10 * currentRound} points`);
       
-      if (combinationExists) {
-        toast({
-          title: "Already Found!",
-          description: "You've already discovered this combination.",
-          variant: "destructive"
-        });
-        
-        setGameState(prev => ({ 
-          ...prev, 
-          selectedBlocks: [],
-          inputValue: ''
-        }));
-        return;
-      }
-      
-      const timeBonus = Math.floor(gameState.timeRemaining / 6);
-      const totalPoints = 10 + timeBonus;
-      
-      setFoundCombinations(prev => [...prev, [...gameState.selectedBlocks]]);
-      
-      toast({
-        title: "Correct!",
-        description: `+${totalPoints} points! ${result.equation}`,
-        variant: "default"
-      });
-      
-      setGameState(prev => ({ 
-        ...prev, 
-        score: prev.score + totalPoints,
-        selectedBlocks: [],
-        inputValue: '',
-        history: [
-          ...prev.history,
-          {
-            equation: result.equation || '',
-            result: result.result || 0,
-            success: true
-          }
-        ]
-      }));
-      
-      if (foundCombinations.length + 1 >= correctCombinations.length) {
-        toast({
-          title: "All combinations found!",
-          description: "Amazing! You found them all. New puzzle loading...",
-        });
-        
-        setTimeout(() => {
-          setGameState(prev => ({ ...prev, round: prev.round + 1 }));
-          initializeGame();
-        }, 2000);
-      }
+      setTimeout(() => {
+        if (currentRound >= 10) {
+          endGame(newScore);
+        } else {
+          setCurrentRound(currentRound + 1);
+          generateNewPyramid();
+        }
+      }, 1500);
     } else {
-      toast({
-        title: "Incorrect",
-        description: `${result.equation} ≠ ${gameState.targetNumber}`,
-        variant: "destructive"
-      });
-      
-      setGameState(prev => ({ 
-        ...prev, 
-        score: Math.max(0, prev.score - 5),
-        selectedBlocks: [],
-        inputValue: '',
-        history: [
-          ...prev.history,
-          {
-            equation: result.equation || '',
-            result: result.result || 0,
-            success: false
-          }
-        ]
-      }));
+      setFeedback(`Incorrect. Got ${result.result}, needed ${targetNumber}`);
+    }
+  };
+
+  const handleLetterSubmit = () => {
+    const indices = parseLetterInput(letterInput, blocks);
+    if (indices.includes(-1)) {
+      setFeedback('Invalid letters. Use a-j only.');
+      return;
+    }
+    if (indices.length !== 3) {
+      setFeedback('Please enter exactly 3 letters');
+      return;
+    }
+    setSelectedBlocks(indices);
+    handleSubmit();
+  };
+
+  const endGame = async (finalScore: number) => {
+    setGameOver(true);
+    
+    if (authState.user) {
+      try {
+        await supabase
+          .from('leaderboards')
+          .insert({
+            user_id: authState.user.id,
+            score: finalScore,
+            rounds_completed: currentRound
+          });
+      } catch (error) {
+        console.error('Error saving score:', error);
+      }
     }
   };
 
   const resetGame = () => {
-    setGameState(prev => ({
-      ...prev,
-      score: 0,
-      round: 1,
-      gameStatus: 'playing',
-      selectedBlocks: [],
-      inputValue: '',
-      history: []
-    }));
-    setFoundCombinations([]);
-    initializeGame();
-  };
-  
-  const nextPuzzle = () => {
-    setGameState(prev => ({ ...prev, round: prev.round + 1 }));
-    initializeGame();
+    setCurrentRound(1);
+    setScore(0);
+    setGameOver(false);
+    setCorrectCombinations([]);
+    generateNewPyramid();
   };
 
-  return (
-    <div 
-      className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 flex flex-col overflow-hidden"
-      style={{
-        backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23111827\"/><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"%23fbbf24\" opacity=\"0.6\"/><circle cx=\"80\" cy=\"40\" r=\"1.5\" fill=\"%23fbbf24\" opacity=\"0.4\"/><circle cx=\"40\" cy=\"80\" r=\"2\" fill=\"%23fbbf24\" opacity=\"0.5\"/></svg>')"
-      }}
-    >
-      {/* Game Over Screen - Fixed positioning */}
-      {gameState.gameStatus === 'completed' && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <Card className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-yellow-400 shadow-2xl max-w-md w-full">
-            <div className="text-center text-white p-8">
-              <h2 className="text-4xl font-bold text-yellow-400 mb-6">🏁 Game Over! 🏁</h2>
-              <div className="text-2xl mb-3">Final Score: <span className="font-bold text-green-400">{gameState.score}</span></div>
-              <div className="text-xl mb-8">Rounds Completed: <span className="font-bold text-blue-400">{gameState.round - 1}</span></div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={resetGame} className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 hover:from-yellow-300 hover:to-yellow-400 px-8 py-3 text-lg font-semibold">
-                  🎮 Play Again
-                </Button>
-                <Button onClick={() => navigate('/home')} variant="outline" className="border-2 border-gray-400 text-gray-400 hover:bg-gray-700 px-8 py-3 text-lg">
-                  🏠 Back to Home
-                </Button>
-              </div>
+  if (gameOver) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4 relative">
+        <BackButton onClick={() => navigate('/home')} />
+        
+        <Card className="w-full max-w-md bg-gray-800 border-yellow-500 border-2">
+          <CardHeader className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-black">
+            <CardTitle className="text-center text-2xl font-bold">Game Over!</CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 text-center space-y-4">
+            <div className="text-white">
+              <div className="text-3xl font-bold text-green-400 mb-2">{score}</div>
+              <div className="text-lg">Final Score</div>
+              <div className="text-gray-300">Rounds Completed: {currentRound - 1}</div>
             </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Main Game Content - Only show when game is not completed */}
-      {gameState.gameStatus !== 'completed' && (
-        <div className="flex-1 flex flex-col h-screen max-h-screen">
-          {/* Compact Header */}
-          <div className="mb-2">
-            <div className="grid grid-cols-4 gap-1 text-white text-xs mb-2">
-              <div className="text-center">
-                <div className="text-gray-300">Score</div>
-                <div className="text-lg font-bold text-green-400">{gameState.score}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-gray-300">Round</div>
-                <div className="text-lg font-bold text-blue-400">{gameState.round}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-gray-300">Time</div>
-                <div className={`text-lg font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : 'text-white'}`}>
-                  {Math.floor(gameState.timeRemaining / 60)}:{(gameState.timeRemaining % 60).toString().padStart(2, '0')}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-gray-300">Found</div>
-                <div className="text-lg font-bold text-purple-400">
-                  {foundCombinations.length}/{correctCombinations.length}
-                </div>
-              </div>
-            </div>
-
-            {/* Target Number */}
-            <Card className="mb-2 p-3 bg-gradient-to-r from-yellow-500 to-yellow-600 border-2 border-yellow-400">
-              <div className="text-center">
-                <div className="text-sm font-bold text-gray-800">🎯 TARGET 🎯</div>
-                <div className="text-3xl font-bold text-gray-900">{gameState.targetNumber}</div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Pyramid - Compact */}
-          <div className="flex-1 flex justify-center items-start mb-2">
-            <div className="scale-[0.7] -my-6">
-              <PyramidGrid
-                blocks={gameState.blocks}
-                selectedBlocks={gameState.selectedBlocks}
-                onBlockClick={handleBlockClick}
-              />
-            </div>
-          </div>
-
-          {/* Input and Submit */}
-          <div className="mb-2">
-            <div className="flex items-center space-x-2">
-              <Input
-                placeholder="Enter letters (abc)"
-                value={gameState.inputValue}
-                onChange={handleInputChange}
-                maxLength={3}
-                className="bg-gray-700 text-white border-2 border-yellow-500 focus:border-yellow-400 text-center text-lg h-10"
-                disabled={gameState.gameStatus !== 'playing'}
-              />
-              <Button
-                onClick={submitEquation}
-                disabled={gameState.selectedBlocks.length !== 3 || gameState.gameStatus !== 'playing'}
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 h-10"
+            <div className="space-y-2">
+              <Button 
+                onClick={resetGame}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
               >
-                Submit
+                Play Again
+              </Button>
+              <Button 
+                onClick={() => navigate('/leaderboards')}
+                variant="outline"
+                className="w-full border-yellow-500 text-yellow-400 hover:bg-yellow-500/10"
+              >
+                View Leaderboards
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 sm:p-4 relative">
+      <BackButton onClick={() => navigate('/home')} />
+      
+      <div className="max-w-6xl mx-auto pt-16">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Game Area */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Game Stats */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <Card className="bg-gray-800 border-blue-500">
+                <CardContent className="p-3 text-center">
+                  <div className="text-blue-400 text-sm font-semibold">Round</div>
+                  <div className="text-white text-xl font-bold">{currentRound}/10</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-800 border-green-500">
+                <CardContent className="p-3 text-center">
+                  <div className="text-green-400 text-sm font-semibold">Score</div>
+                  <div className="text-white text-xl font-bold">{score}</div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gray-800 border-yellow-500 relative">
+                <CardContent className="p-3 text-center">
+                  <div className="text-yellow-400 text-sm font-semibold flex items-center justify-center">
+                    <Target size={16} className="mr-1" />
+                    Target
+                  </div>
+                  <div className="text-white text-xl font-bold">{targetNumber}</div>
+                </CardContent>
+                <Button
+                  onClick={generateNewPyramid}
+                  size="icon"
+                  variant="ghost"
+                  className="absolute -top-2 -right-2 h-8 w-8 bg-gray-700 hover:bg-gray-600 text-yellow-400"
+                >
+                  <RefreshCw size={16} />
+                </Button>
+              </Card>
+            </div>
+
+            {/* Pyramid Grid */}
+            <Card className="bg-gray-800 border-purple-500">
+              <CardContent className="p-4 sm:p-6">
+                <PyramidGrid
+                  blocks={blocks}
+                  selectedBlocks={selectedBlocks}
+                  onBlockClick={handleBlockClick}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Controls */}
+            <Card className="bg-gray-800 border-gray-600">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    value={letterInput}
+                    onChange={(e) => setLetterInput(e.target.value)}
+                    placeholder="Enter 3 letters (e.g., abc)"
+                    className="bg-gray-700 text-white border-gray-600 text-center"
+                    maxLength={3}
+                  />
+                  <Button
+                    onClick={handleLetterSubmit}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6"
+                  >
+                    Submit Letters
+                  </Button>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={selectedBlocks.length !== 3}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Submit Selection ({selectedBlocks.length}/3)
+                  </Button>
+                </div>
+
+                {feedback && (
+                  <div className={`text-center font-semibold ${
+                    feedback.includes('Correct') ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {feedback}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Selected Equation Preview */}
-          {gameState.selectedBlocks.length > 0 && (
-            <Card className="mb-2 p-2 bg-gray-800 border-gray-600">
-              <div className="text-center text-white">
-                <div className="text-xs text-gray-300">Selected:</div>
-                <div className="text-sm font-mono">
-                  {gameState.selectedBlocks.map((index, i) => (
-                    <span key={index}>
-                      {gameState.blocks[index]?.label}({gameState.blocks[index]?.value})
-                      {i < gameState.selectedBlocks.length - 1 ? ' + ' : ''}
-                    </span>
-                  ))}
-                  {gameState.selectedBlocks.length === 3 && ' = ?'}
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex space-x-2 mb-2">
-            <Button 
-              onClick={() => setGameState(prev => ({ ...prev, selectedBlocks: [], inputValue: '' }))}
-              variant="outline"
-              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900 flex-1 h-8 text-sm"
-            >
-              Clear
-            </Button>
-            <Button
-              onClick={nextPuzzle}
-              variant="outline"
-              className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-gray-900 flex-1 h-8 text-sm"
-            >
-              Next
-            </Button>
-            <Button
-              onClick={() => navigate('/home')}
-              variant="outline"
-              className="border-gray-400 text-gray-400 hover:bg-gray-700 flex-1 h-8 text-sm"
-            >
-              Home
-            </Button>
+          {/* Correct Combinations Sidebar */}
+          <div className="lg:col-span-1">
+            <CorrectCombinations combinations={correctCombinations} />
           </div>
-
-          {/* Found Combinations - Compact */}
-          {foundCombinations.length > 0 && (
-            <Card className="p-2 bg-gray-800 border-gray-600">
-              <div className="text-white">
-                <div className="text-xs text-gray-300 mb-1">✅ Found:</div>
-                <div className="grid grid-cols-4 gap-1">
-                  {foundCombinations.map((combo, i) => (
-                    <div key={i} className="text-xs text-green-400 font-mono bg-green-900/50 px-1 py-0.5 rounded text-center">
-                      {combo.map(index => gameState.blocks[index]?.label).join('')}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
+
+export default GameScreen;
