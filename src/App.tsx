@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +14,9 @@ import MultiplayerPage from "./pages/MultiplayerPage";
 import LocalMultiplayerPage from "./pages/LocalMultiplayerPage";
 import OnlineMultiplayerPage from "./pages/OnlineMultiplayerPage";
 import NotFound from "./pages/NotFound";
+import SignupPage from "./pages/SignupPage";
+import ChooseUsernamePage from "./pages/ChooseUsernamePage";
+import LoginFormPage from "./pages/LoginFormPage";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +28,10 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/login" element={<LoginFormPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/choose-username" element={<ChooseUsernamePage />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/game" element={<Index />} />
             <Route path="/leaderboards" element={<LeaderboardsPage />} />
