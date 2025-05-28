@@ -12,6 +12,8 @@ import LeaderboardsPage from "./pages/LeaderboardsPage";
 import SettingsPage from "./pages/SettingsPage";
 import HowToPlayPage from "./pages/HowToPlayPage";
 import MultiplayerPage from "./pages/MultiplayerPage";
+import LocalMultiplayerPage from "./pages/LocalMultiplayerPage";
+import OnlineMultiplayerPage from "./pages/OnlineMultiplayerPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/how-to-play" element={<HowToPlayPage />} />
             <Route path="/multiplayer" element={<MultiplayerPage />} />
+            <Route path="/multiplayer/local" element={<LocalMultiplayerPage />} />
+            <Route path="/multiplayer/online" element={<OnlineMultiplayerPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

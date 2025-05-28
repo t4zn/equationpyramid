@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MultiplayerGameScreen } from './MultiplayerGameScreen';
+import MultiplayerGameScreen from './MultiplayerGameScreen';
 
 interface OnlineMultiplayerGameProps {
   roomId: string;

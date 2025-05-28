@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PyramidGrid } from './PyramidGrid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -10,7 +9,6 @@ import { generatePyramid, evaluateEquation, parseLetterInput } from '@/utils/pyr
 import { Block } from '@/types/game';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Target, Crown, Users } from 'lucide-react';
 
 interface Player {
@@ -22,14 +20,14 @@ interface Player {
 
 interface MultiplayerGameScreenProps {
   gameMode: 'local' | 'online';
-  roomCode?: string;
-  players: Player[];
+  playerCount: number;
+  roomId?: string;
 }
 
 const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({ 
   gameMode, 
-  roomCode, 
-  players 
+  playerCount,
+  roomId
 }) => {
   const navigate = useNavigate();
   const { authState } = useAuth();
@@ -42,6 +40,19 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   const [feedback, setFeedback] = useState('');
   const [allPlayersCombinations, setAllPlayersCombinations] = useState<{ username: string; combination: string }[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+
+  // Create mock players for demonstration
+  const [players] = useState<Player[]>(() => {
+    const mockPlayers: Player[] = [];
+    for (let i = 0; i < playerCount; i++) {
+      mockPlayers.push({
+        id: i === 0 && authState.user ? authState.user.id : `player-${i}`,
+        username: i === 0 && authState.user?.username ? authState.user.username : `Player ${i + 1}`,
+        score: 0
+      });
+    }
+    return mockPlayers;
+  });
 
   useEffect(() => {
     generateNewPyramid();
@@ -57,12 +68,6 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   };
 
   const handleBlockClick = (index: number) => {
-    // Only allow current player to make moves
-    if (players[currentPlayerIndex]?.id !== authState.user?.id) {
-      setFeedback("Wait for your turn!");
-      return;
-    }
-
     if (selectedBlocks.includes(index)) {
       setSelectedBlocks(selectedBlocks.filter(i => i !== index));
     } else if (selectedBlocks.length < 3) {
@@ -71,11 +76,6 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   };
 
   const handleSubmit = () => {
-    if (players[currentPlayerIndex]?.id !== authState.user?.id) {
-      setFeedback("Wait for your turn!");
-      return;
-    }
-
     if (selectedBlocks.length !== 3) {
       setFeedback('Please select exactly 3 blocks');
       return;
@@ -91,18 +91,12 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
     const currentPlayer = players[currentPlayerIndex];
     
     if (result.result === targetNumber) {
-      // Add to all players combinations
       setAllPlayersCombinations([
         ...allPlayersCombinations, 
         { username: currentPlayer.username, combination: result.equation || '' }
       ]);
       
-      // Update player score
-      const updatedPlayers = players.map((player, index) => 
-        index === currentPlayerIndex 
-          ? { ...player, score: player.score + (10 * currentRound) }
-          : player
-      );
+      players[currentPlayerIndex].score += (10 * currentRound);
       
       setFeedback(`${currentPlayer.username} scored! +${10 * currentRound} points`);
       
@@ -117,7 +111,6 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
     } else {
       setFeedback(`${currentPlayer.username}: Got ${result.result}, needed ${targetNumber}`);
       
-      // Switch to next player
       setTimeout(() => {
         setCurrentPlayerIndex((currentPlayerIndex + 1) % players.length);
         setSelectedBlocks([]);
@@ -128,11 +121,6 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   };
 
   const handleLetterSubmit = () => {
-    if (players[currentPlayerIndex]?.id !== authState.user?.id) {
-      setFeedback("Wait for your turn!");
-      return;
-    }
-
     const indices = parseLetterInput(letterInput, blocks);
     if (indices.includes(-1)) {
       setFeedback('Invalid letters. Use a-j only.');
@@ -151,6 +139,7 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
     setGameOver(false);
     setAllPlayersCombinations([]);
     setCurrentPlayerIndex(0);
+    players.forEach(player => player.score = 0);
     generateNewPyramid();
   };
 
@@ -210,15 +199,133 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   }
 
   const currentPlayer = players[currentPlayerIndex];
-  const isMyTurn = currentPlayer?.id === authState.user?.id;
+  const isMyTurn = gameMode === 'local' || currentPlayer?.id === authState.user?.id;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 sm:p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 relative">
       <BackButton onClick={() => navigate('/multiplayer')} />
       
-      <div className="max-w-6xl mx-auto pt-16">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          {/* Game Area */}
+      <div className="max-w-6xl mx-auto pt-12">
+        {/* Mobile Layout */}
+        <div className="lg:hidden space-y-3">
+          {/* Game Stats - Mobile */}
+          <div className="grid grid-cols-2 gap-2">
+            <Card className="bg-gray-800 border-blue-500">
+              <CardContent className="p-2 text-center">
+                <div className="text-blue-400 text-xs font-semibold">Round</div>
+                <div className="text-white text-lg font-bold">{currentRound}/10</div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-800 border-yellow-500">
+              <CardContent className="p-2 text-center">
+                <div className="text-yellow-400 text-xs font-semibold flex items-center justify-center">
+                  <Target size={12} className="mr-1" />
+                  Target
+                </div>
+                <div className="text-white text-lg font-bold">{targetNumber}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {gameMode === 'online' && roomId && (
+            <Card className="bg-gray-800 border-purple-500">
+              <CardContent className="p-2 text-center">
+                <div className="text-purple-400 text-xs font-semibold">Room Code</div>
+                <div className="text-white text-lg font-bold">{roomId}</div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Current Player Indicator - Mobile */}
+          <Card className={`border-2 ${isMyTurn ? 'border-green-500 bg-green-900/20' : 'border-gray-600 bg-gray-800'}`}>
+            <CardContent className="p-2 text-center">
+              <div className={`text-sm font-bold ${isMyTurn ? 'text-green-400' : 'text-gray-300'}`}>
+                {gameMode === 'local' ? `${currentPlayer?.username}'s Turn` : 
+                 isMyTurn ? "Your Turn!" : `${currentPlayer?.username}'s Turn`}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Players Scores - Mobile */}
+          <div className="grid grid-cols-2 gap-2">
+            {players.map((player, index) => (
+              <Card key={player.id} className={`bg-gray-800 border-2 ${
+                index === currentPlayerIndex ? 'border-green-500' : 'border-gray-600'
+              }`}>
+                <CardContent className="p-2 text-center">
+                  <div className="text-gray-300 text-xs font-semibold flex items-center justify-center">
+                    <Users size={12} className="mr-1" />
+                    {player.username}
+                  </div>
+                  <div className="text-white text-lg font-bold">{player.score}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Correct Combinations - Mobile */}
+          <CorrectCombinations 
+            combinations={[]} 
+            isMultiplayer={true}
+            allPlayersCombinations={allPlayersCombinations}
+          />
+
+          {/* Pyramid Grid - Mobile */}
+          <Card className="bg-gray-800 border-purple-500">
+            <CardContent className="p-3">
+              <PyramidGrid
+                blocks={blocks}
+                selectedBlocks={selectedBlocks}
+                onBlockClick={handleBlockClick}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Controls - Mobile */}
+          <Card className="bg-gray-800 border-gray-600">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  value={letterInput}
+                  onChange={(e) => setLetterInput(e.target.value)}
+                  placeholder="Enter 3 letters"
+                  className="bg-gray-700 text-white border-gray-600 text-center text-sm"
+                  maxLength={3}
+                  disabled={!isMyTurn}
+                />
+                <Button
+                  onClick={handleLetterSubmit}
+                  disabled={!isMyTurn}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 text-sm"
+                >
+                  Submit
+                </Button>
+              </div>
+              
+              <Button
+                onClick={handleSubmit}
+                disabled={selectedBlocks.length !== 3 || !isMyTurn}
+                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm"
+              >
+                Submit Selection ({selectedBlocks.length}/3)
+              </Button>
+
+              {feedback && (
+                <div className={`text-center font-semibold text-sm ${
+                  feedback.includes('scored') ? 'text-green-400' : 
+                  feedback.includes('Wait') ? 'text-yellow-400' : 'text-red-400'
+                }`}>
+                  {feedback}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Desktop Layout - keep existing desktop code structure */}
+        <div className="hidden lg:grid lg:grid-cols-4 gap-4">
+          {/* Desktop game area - keeping existing structure but with proper responsive design */}
           <div className="lg:col-span-3 space-y-4">
             {/* Game Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -239,11 +346,11 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
                 </CardContent>
               </Card>
 
-              {gameMode === 'online' && roomCode && (
+              {gameMode === 'online' && roomId && (
                 <Card className="bg-gray-800 border-purple-500 sm:col-span-2">
                   <CardContent className="p-3 text-center">
                     <div className="text-purple-400 text-sm font-semibold">Room Code</div>
-                    <div className="text-white text-lg font-bold">{roomCode}</div>
+                    <div className="text-white text-lg font-bold">{roomId}</div>
                   </CardContent>
                 </Card>
               )}

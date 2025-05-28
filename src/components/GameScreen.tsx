@@ -156,15 +156,105 @@ const GameScreen = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 sm:p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 relative">
       <BackButton onClick={() => navigate('/home')} />
       
-      <div className="max-w-6xl mx-auto pt-16">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="max-w-6xl mx-auto pt-12">
+        {/* Mobile Layout */}
+        <div className="lg:hidden space-y-3">
+          {/* Game Stats - Mobile */}
+          <div className="grid grid-cols-3 gap-2">
+            <Card className="bg-gray-800 border-blue-500">
+              <CardContent className="p-2 text-center">
+                <div className="text-blue-400 text-xs font-semibold">Round</div>
+                <div className="text-white text-lg font-bold">{currentRound}/10</div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-800 border-green-500">
+              <CardContent className="p-2 text-center">
+                <div className="text-green-400 text-xs font-semibold">Score</div>
+                <div className="text-white text-lg font-bold">{score}</div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-gray-800 border-yellow-500 relative">
+              <CardContent className="p-2 text-center">
+                <div className="text-yellow-400 text-xs font-semibold flex items-center justify-center">
+                  <Target size={12} className="mr-1" />
+                  Target
+                </div>
+                <div className="text-white text-lg font-bold">{targetNumber}</div>
+              </CardContent>
+              <Button
+                onClick={generateNewPyramid}
+                size="icon"
+                variant="ghost"
+                className="absolute -top-1 -right-1 h-6 w-6 bg-gray-700 hover:bg-gray-600 text-yellow-400"
+              >
+                <RefreshCw size={12} />
+              </Button>
+            </Card>
+          </div>
+
+          {/* Correct Combinations - Mobile Top */}
+          <CorrectCombinations combinations={correctCombinations} />
+
+          {/* Pyramid Grid - Mobile */}
+          <Card className="bg-gray-800 border-purple-500">
+            <CardContent className="p-3">
+              <PyramidGrid
+                blocks={blocks}
+                selectedBlocks={selectedBlocks}
+                onBlockClick={handleBlockClick}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Controls - Mobile */}
+          <Card className="bg-gray-800 border-gray-600">
+            <CardContent className="p-3 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  value={letterInput}
+                  onChange={(e) => setLetterInput(e.target.value)}
+                  placeholder="Enter 3 letters"
+                  className="bg-gray-700 text-white border-gray-600 text-center text-sm"
+                  maxLength={3}
+                />
+                <Button
+                  onClick={handleLetterSubmit}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 text-sm"
+                >
+                  Submit
+                </Button>
+              </div>
+              
+              <Button
+                onClick={handleSubmit}
+                disabled={selectedBlocks.length !== 3}
+                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm"
+              >
+                Submit Selection ({selectedBlocks.length}/3)
+              </Button>
+
+              {feedback && (
+                <div className={`text-center font-semibold text-sm ${
+                  feedback.includes('Correct') ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {feedback}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden lg:grid lg:grid-cols-4 gap-4">
           {/* Game Area */}
           <div className="lg:col-span-3 space-y-4">
             {/* Game Stats */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Card className="bg-gray-800 border-blue-500">
                 <CardContent className="p-3 text-center">
                   <div className="text-blue-400 text-sm font-semibold">Round</div>
@@ -200,7 +290,7 @@ const GameScreen = () => {
 
             {/* Pyramid Grid */}
             <Card className="bg-gray-800 border-purple-500">
-              <CardContent className="p-4 sm:p-6">
+              <CardContent className="p-6">
                 <PyramidGrid
                   blocks={blocks}
                   selectedBlocks={selectedBlocks}
@@ -212,7 +302,7 @@ const GameScreen = () => {
             {/* Controls */}
             <Card className="bg-gray-800 border-gray-600">
               <CardContent className="p-4 space-y-4">
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex gap-2">
                   <Input
                     value={letterInput}
                     onChange={(e) => setLetterInput(e.target.value)}
@@ -228,15 +318,13 @@ const GameScreen = () => {
                   </Button>
                 </div>
                 
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={selectedBlocks.length !== 3}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    Submit Selection ({selectedBlocks.length}/3)
-                  </Button>
-                </div>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={selectedBlocks.length !== 3}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Submit Selection ({selectedBlocks.length}/3)
+                </Button>
 
                 {feedback && (
                   <div className={`text-center font-semibold ${

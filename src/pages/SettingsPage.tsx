@@ -9,10 +9,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BackButton } from '@/components/BackButton';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const SettingsPage = () => {
   const { authState } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [username, setUsername] = useState(authState.user?.username || '');
   const [avatarUrl, setAvatarUrl] = useState(authState.user?.avatar_url || '');
   const [updating, setUpdating] = useState(false);
@@ -42,9 +44,19 @@ const SettingsPage = () => {
       if (error) {
         throw error;
       }
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
       
     } catch (error: any) {
       console.error('Error updating profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUpdating(false);
     }
@@ -59,12 +71,46 @@ const SettingsPage = () => {
       }
 
       const file = event.target.files[0];
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "File size must be less than 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${authState.user?.id}-${Math.random()}.${fileExt}`;
 
+      // First, create the avatars bucket if it doesn't exist
+      const { error: bucketError } = await supabase.storage
+        .from('avatars')
+        .list('', { limit: 1 });
+
+      if (bucketError && bucketError.message.includes('Bucket not found')) {
+        // Create bucket if it doesn't exist
+        await supabase.storage.createBucket('avatars', { public: true });
+      }
+
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) {
         throw uploadError;
@@ -75,8 +121,19 @@ const SettingsPage = () => {
         .getPublicUrl(fileName);
 
       setAvatarUrl(data.publicUrl);
+      
+      toast({
+        title: "Avatar uploaded",
+        description: "Your avatar has been uploaded. Don't forget to save your profile!",
+      });
+
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload avatar. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setUploading(false);
     }
@@ -101,7 +158,7 @@ const SettingsPage = () => {
                   <User size={32} />
                 </AvatarFallback>
               </Avatar>
-              <label className="absolute bottom-0 right-0 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-full p-1 cursor-pointer">
+              <label className="absolute bottom-0 right-0 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-full p-1 cursor-pointer transition-colors">
                 <Camera size={16} />
                 <input
                   type="file"
@@ -133,6 +190,12 @@ const SettingsPage = () => {
               >
                 {updating ? 'Updating...' : 'Save'}
               </Button>
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <div className="text-sm text-gray-400">
+              Email: {authState.user?.email}
             </div>
           </div>
         </CardContent>
