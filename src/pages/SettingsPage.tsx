@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -95,43 +94,94 @@ const SettingsPage = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${authState.user?.id}-${Math.random()}.${fileExt}`;
 
-      // First, create the avatars bucket if it doesn't exist
-      const { error: bucketError } = await supabase.storage
-        .from('avatars')
-        .list('', { limit: 1 });
+      // First, try to create the avatars bucket if it doesn't exist
+      try {
+        // Check if bucket exists
+        const { data: buckets, error: listError } = await supabase
+          .storage
+          .listBuckets();
 
-      if (bucketError && bucketError.message.includes('Bucket not found')) {
-        // Create bucket if it doesn't exist
-        await supabase.storage.createBucket('avatars', { public: true });
+        if (listError) {
+          throw new Error('Failed to list buckets');
+        }
+
+        const avatarsBucket = buckets?.find(b => b.name === 'avatars');
+
+        if (!avatarsBucket) {
+          // Create bucket if it doesn't exist
+          const { error: createError } = await supabase
+            .storage
+            .createBucket('avatars', {
+              public: true,
+              allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif'],
+              fileSizeLimit: 5242880 // 5MB in bytes
+            });
+
+          if (createError) {
+            throw new Error('Failed to create avatars bucket');
+          }
+
+          // Set bucket policy to public
+          const { error: policyError } = await supabase
+            .storage
+            .from('avatars')
+            .createSignedUrl('dummy.txt', 1);
+
+          if (policyError) {
+            console.warn('Warning: Could not set bucket policy:', policyError);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking/creating bucket:', error);
+        throw new Error('Failed to access storage');
       }
 
+      // Upload the file
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
       if (uploadError) {
         throw uploadError;
       }
 
-      const { data } = supabase.storage
+      // Get the public URL
+      const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
-      setAvatarUrl(data.publicUrl);
+      if (!urlData?.publicUrl) {
+        throw new Error('Failed to get public URL');
+      }
+
+      // Update the profile with the new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: urlData.publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authState.user?.id);
+
+      if (updateError) {
+        throw new Error('Failed to update profile with new avatar');
+      }
+
+      setAvatarUrl(urlData.publicUrl);
       
       toast({
         title: "Avatar uploaded",
-        description: "Your avatar has been uploaded. Don't forget to save your profile!",
+        description: "Your avatar has been successfully uploaded and saved.",
       });
 
     } catch (error: any) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Error",
-        description: "Failed to upload avatar. Please try again.",
+        description: error.message || "Failed to upload avatar. Please try again.",
         variant: "destructive",
       });
     } finally {

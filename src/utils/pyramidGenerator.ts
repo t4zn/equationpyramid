@@ -1,4 +1,3 @@
-
 import { Block } from '../types/game';
 
 const operators = ['+', '-', '×', '÷'];
@@ -12,10 +11,10 @@ export const generatePyramid = () => {
     const blocks: Block[] = [];
     const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     
-    // Generate 7 blocks with operator+number format - ensure even distribution
+    // Generate all 10 blocks with operator+number format
     const operatorCounts = { '+': 0, '-': 0, '×': 0, '÷': 0 };
     
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 10; i++) {
       const number = baseNumbers[Math.floor(Math.random() * baseNumbers.length)];
       
       // Ensure at least one of each operator
@@ -24,7 +23,7 @@ export const generatePyramid = () => {
         operator = operators[i];
       } else {
         // For remaining blocks, pick randomly but prefer less used operators
-        const availableOps = operators.filter(op => operatorCounts[op] < 2);
+        const availableOps = operators.filter(op => operatorCounts[op] < 3);
         operator = availableOps.length > 0 
           ? availableOps[Math.floor(Math.random() * availableOps.length)]
           : operators[Math.floor(Math.random() * operators.length)];
@@ -39,17 +38,6 @@ export const generatePyramid = () => {
                      operator === '+' ? number :
                      operator === '×' ? number :
                      operator === '÷' ? number : number,
-        label: letters[i]
-      });
-    }
-    
-    // Generate 3 pure number blocks (without operators)
-    for (let i = 7; i < 10; i++) {
-      const number = Math.floor(Math.random() * 9) + 1;
-      blocks.push({
-        value: number.toString(),
-        type: 'number',
-        numericValue: number,
         label: letters[i]
       });
     }
@@ -80,9 +68,9 @@ const generateFallbackPyramid = () => {
     { value: '+7', type: 'number', numericValue: 7, label: 'e' },
     { value: '-1', type: 'number', numericValue: -1, label: 'f' },
     { value: '×3', type: 'number', numericValue: 3, label: 'g' },
-    { value: '2', type: 'number', numericValue: 2, label: 'h' },
-    { value: '6', type: 'number', numericValue: 6, label: 'i' },
-    { value: '1', type: 'number', numericValue: 1, label: 'j' }
+    { value: '+2', type: 'number', numericValue: 2, label: 'h' },
+    { value: '+6', type: 'number', numericValue: 6, label: 'i' },
+    { value: '+1', type: 'number', numericValue: 1, label: 'j' }
   ];
   
   return { blocks, targetNumber: 15 };

@@ -9,7 +9,7 @@ import { generatePyramid, evaluateEquation, parseLetterInput } from '@/utils/pyr
 import { Block } from '@/types/game';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { Target, Crown, Users } from 'lucide-react';
+import { Target, Crown, Users, Timer } from 'lucide-react';
 
 interface Player {
   id: string;
@@ -40,6 +40,8 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   const [feedback, setFeedback] = useState('');
   const [allPlayersCombinations, setAllPlayersCombinations] = useState<{ username: string; combination: string }[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
+  const [timerActive, setTimerActive] = useState(true);
 
   // Create mock players for demonstration
   const [players] = useState<Player[]>(() => {
@@ -57,6 +59,30 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   useEffect(() => {
     generateNewPyramid();
   }, []);
+
+  // Timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (timerActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setTimerActive(false);
+            setGameOver(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [timerActive, timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const generateNewPyramid = () => {
     const pyramid = generatePyramid();
@@ -139,6 +165,8 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
     setGameOver(false);
     setAllPlayersCombinations([]);
     setCurrentPlayerIndex(0);
+    setTimeLeft(120);
+    setTimerActive(true);
     players.forEach(player => player.score = 0);
     generateNewPyramid();
   };
@@ -202,14 +230,14 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
   const isMyTurn = gameMode === 'local' || currentPlayer?.id === authState.user?.id;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 relative">
+    <div className="h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 relative overflow-hidden">
       <BackButton onClick={() => navigate('/multiplayer')} />
       
-      <div className="max-w-6xl mx-auto pt-12">
+      <div className="h-full max-w-6xl mx-auto pt-12 flex flex-col">
         {/* Mobile Layout */}
-        <div className="lg:hidden space-y-3">
+        <div className="lg:hidden flex flex-col h-full space-y-2">
           {/* Game Stats - Mobile */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Card className="bg-gray-800 border-blue-500">
               <CardContent className="p-2 text-center">
                 <div className="text-blue-400 text-xs font-semibold">Round</div>
@@ -224,6 +252,18 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
                   Target
                 </div>
                 <div className="text-white text-lg font-bold">{targetNumber}</div>
+              </CardContent>
+            </Card>
+
+            <Card className={`bg-gray-800 ${timeLeft <= 30 ? 'border-red-500' : 'border-purple-500'}`}>
+              <CardContent className="p-2 text-center">
+                <div className="text-purple-400 text-xs font-semibold flex items-center justify-center">
+                  <Timer size={12} className="mr-1" />
+                  Time
+                </div>
+                <div className={`text-lg font-bold ${timeLeft <= 30 ? 'text-red-400' : 'text-white'}`}>
+                  {formatTime(timeLeft)}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -248,32 +288,30 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
           </Card>
 
           {/* Players Scores - Mobile */}
-          <div className="grid grid-cols-2 gap-2">
-            {players.map((player, index) => (
-              <Card key={player.id} className={`bg-gray-800 border-2 ${
-                index === currentPlayerIndex ? 'border-green-500' : 'border-gray-600'
-              }`}>
-                <CardContent className="p-2 text-center">
-                  <div className="text-gray-300 text-xs font-semibold flex items-center justify-center">
-                    <Users size={12} className="mr-1" />
-                    {player.username}
-                  </div>
-                  <div className="text-white text-lg font-bold">{player.score}</div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="flex-1 min-h-0">
+            <Card className="bg-gray-800 border-gray-600 h-full">
+              <CardContent className="p-2">
+                <div className="text-gray-400 text-xs font-semibold mb-2 flex items-center">
+                  <Users size={12} className="mr-1" />
+                  Players
+                </div>
+                <div className="space-y-1">
+                  {players.map((player) => (
+                    <div key={player.id} className={`flex justify-between items-center ${
+                      player.id === currentPlayer?.id ? 'text-green-400' : 'text-gray-300'
+                    }`}>
+                      <span className="text-sm">{player.username}</span>
+                      <span className="text-sm font-bold">{player.score}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-
-          {/* Correct Combinations - Mobile */}
-          <CorrectCombinations 
-            combinations={[]} 
-            isMultiplayer={true}
-            allPlayersCombinations={allPlayersCombinations}
-          />
 
           {/* Pyramid Grid - Mobile */}
           <Card className="bg-gray-800 border-purple-500">
-            <CardContent className="p-3">
+            <CardContent className="p-2">
               <PyramidGrid
                 blocks={blocks}
                 selectedBlocks={selectedBlocks}
@@ -283,44 +321,43 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
           </Card>
 
           {/* Controls - Mobile */}
-          <Card className="bg-gray-800 border-gray-600">
-            <CardContent className="p-3 space-y-3">
-              <div className="flex gap-2">
-                <Input
-                  value={letterInput}
-                  onChange={(e) => setLetterInput(e.target.value)}
-                  placeholder="Enter 3 letters"
-                  className="bg-gray-700 text-white border-gray-600 text-center text-sm"
-                  maxLength={3}
-                  disabled={!isMyTurn}
-                />
-                <Button
-                  onClick={handleLetterSubmit}
-                  disabled={!isMyTurn}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 text-sm"
-                >
-                  Submit
-                </Button>
-              </div>
-              
-              <Button
-                onClick={handleSubmit}
-                disabled={selectedBlocks.length !== 3 || !isMyTurn}
-                className="w-full bg-green-600 hover:bg-green-700 text-white text-sm"
-              >
-                Submit Selection ({selectedBlocks.length}/3)
-              </Button>
-
-              {feedback && (
-                <div className={`text-center font-semibold text-sm ${
-                  feedback.includes('scored') ? 'text-green-400' : 
-                  feedback.includes('Wait') ? 'text-yellow-400' : 'text-red-400'
-                }`}>
-                  {feedback}
+          {isMyTurn && (
+            <Card className="bg-gray-800 border-gray-600">
+              <CardContent className="p-2 space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={letterInput}
+                    onChange={(e) => setLetterInput(e.target.value)}
+                    placeholder="Enter 3 letters"
+                    className="bg-gray-700 text-white border-gray-600 text-center text-sm"
+                    maxLength={3}
+                  />
+                  <Button
+                    onClick={handleLetterSubmit}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 text-sm"
+                  >
+                    Submit
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                
+                <Button
+                  onClick={handleSubmit}
+                  disabled={selectedBlocks.length !== 3}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white text-sm"
+                >
+                  Submit Selection ({selectedBlocks.length}/3)
+                </Button>
+
+                {feedback && (
+                  <div className={`text-center font-semibold text-sm ${
+                    feedback.includes('scored') ? 'text-green-400' : 'text-red-400'
+                  }`}>
+                    {feedback}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Desktop Layout - keep existing desktop code structure */}

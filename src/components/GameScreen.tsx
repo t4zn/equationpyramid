@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { PyramidGrid } from './PyramidGrid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,7 +10,7 @@ import { Block } from '@/types/game';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { RefreshCw, Target } from 'lucide-react';
+import { RefreshCw, Target, Timer } from 'lucide-react';
 
 const GameScreen = () => {
   const navigate = useNavigate();
@@ -25,10 +24,36 @@ const GameScreen = () => {
   const [letterInput, setLetterInput] = useState('');
   const [feedback, setFeedback] = useState('');
   const [correctCombinations, setCorrectCombinations] = useState<string[]>([]);
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
+  const [timerActive, setTimerActive] = useState(true);
 
   useEffect(() => {
     generateNewPyramid();
   }, []);
+
+  // Timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (timerActive && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setTimerActive(false);
+            endGame(score);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [timerActive, timeLeft, score]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const generateNewPyramid = () => {
     const pyramid = generatePyramid();
@@ -116,6 +141,8 @@ const GameScreen = () => {
     setScore(0);
     setGameOver(false);
     setCorrectCombinations([]);
+    setTimeLeft(120);
+    setTimerActive(true);
     generateNewPyramid();
   };
 
@@ -156,14 +183,14 @@ const GameScreen = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 relative">
+    <div className="h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 relative overflow-hidden">
       <BackButton onClick={() => navigate('/home')} />
       
-      <div className="max-w-6xl mx-auto pt-12">
+      <div className="h-full max-w-6xl mx-auto pt-12 flex flex-col">
         {/* Mobile Layout */}
-        <div className="lg:hidden space-y-3">
+        <div className="lg:hidden flex flex-col h-full space-y-2">
           {/* Game Stats - Mobile */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <Card className="bg-gray-800 border-blue-500">
               <CardContent className="p-2 text-center">
                 <div className="text-blue-400 text-xs font-semibold">Round</div>
@@ -195,14 +222,28 @@ const GameScreen = () => {
                 <RefreshCw size={12} />
               </Button>
             </Card>
+
+            <Card className={`bg-gray-800 ${timeLeft <= 30 ? 'border-red-500' : 'border-purple-500'}`}>
+              <CardContent className="p-2 text-center">
+                <div className="text-purple-400 text-xs font-semibold flex items-center justify-center">
+                  <Timer size={12} className="mr-1" />
+                  Time
+                </div>
+                <div className={`text-lg font-bold ${timeLeft <= 30 ? 'text-red-400' : 'text-white'}`}>
+                  {formatTime(timeLeft)}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Correct Combinations - Mobile Top */}
-          <CorrectCombinations combinations={correctCombinations} />
+          <div className="flex-1 min-h-0">
+            <CorrectCombinations combinations={correctCombinations} />
+          </div>
 
           {/* Pyramid Grid - Mobile */}
           <Card className="bg-gray-800 border-purple-500">
-            <CardContent className="p-3">
+            <CardContent className="p-2">
               <PyramidGrid
                 blocks={blocks}
                 selectedBlocks={selectedBlocks}
@@ -213,7 +254,7 @@ const GameScreen = () => {
 
           {/* Controls - Mobile */}
           <Card className="bg-gray-800 border-gray-600">
-            <CardContent className="p-3 space-y-3">
+            <CardContent className="p-2 space-y-2">
               <div className="flex gap-2">
                 <Input
                   value={letterInput}
