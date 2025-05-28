@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { GameScreen } from '../components/GameScreen';
+import GameScreen from '../components/GameScreen';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
