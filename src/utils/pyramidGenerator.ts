@@ -12,20 +12,23 @@ export const generatePyramid = () => {
     const blocks: Block[] = [];
     const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
     
-    // Generate 7 number blocks with combined operator+number format
+    // Generate 7 blocks with operator+number format (like +5, -3, ×6, etc.)
     for (let i = 0; i < 7; i++) {
       const number = numbers[Math.floor(Math.random() * numbers.length)];
       const operator = operators[Math.floor(Math.random() * operators.length)];
       
       blocks.push({
-        value: `${operator}${number}`,
+        value: `${operator}${Math.abs(number)}`, // Always show positive numbers with operators
         type: 'number',
-        numericValue: number,
+        numericValue: operator === '-' ? -Math.abs(number) : 
+                     operator === '+' ? Math.abs(number) :
+                     operator === '×' ? Math.abs(number) :
+                     operator === '÷' ? Math.abs(number) : Math.abs(number),
         label: letters[i]
       });
     }
     
-    // Generate 3 pure number blocks (without operators)
+    // Generate 3 pure number blocks (without operators, just numbers)
     for (let i = 7; i < 10; i++) {
       const number = Math.floor(Math.random() * 9) + 1;
       blocks.push({
@@ -39,10 +42,10 @@ export const generatePyramid = () => {
     // Generate target number
     const targetNumber = Math.floor(Math.random() * 41) + 10;
     
-    // Check if we can find valid combinations
+    // Check if we can find valid combinations (limit to 4 max)
     const validCombinations = findValidCombinations(blocks, targetNumber);
     
-    // Accept if we have 2-4 combinations (limit enforced)
+    // Accept if we have 2-4 combinations
     if (validCombinations.length >= 2 && validCombinations.length <= 4) {
       return { blocks, targetNumber };
     }
@@ -61,12 +64,12 @@ const generateFallbackPyramid = () => {
     { value: '-3', type: 'number', numericValue: -3, label: 'b' },
     { value: '×2', type: 'number', numericValue: 2, label: 'c' },
     { value: '+4', type: 'number', numericValue: 4, label: 'd' },
-    { value: '6', type: 'number', numericValue: 6, label: 'e' },
-    { value: '1', type: 'number', numericValue: 1, label: 'f' },
-    { value: '7', type: 'number', numericValue: 7, label: 'g' },
-    { value: '3', type: 'number', numericValue: 3, label: 'h' },
-    { value: '2', type: 'number', numericValue: 2, label: 'i' },
-    { value: '8', type: 'number', numericValue: 8, label: 'j' }
+    { value: '×7', type: 'number', numericValue: 7, label: 'e' },
+    { value: '+3', type: 'number', numericValue: 3, label: 'f' },
+    { value: '×1', type: 'number', numericValue: 1, label: 'g' },
+    { value: '2', type: 'number', numericValue: 2, label: 'h' },
+    { value: '9', type: 'number', numericValue: 9, label: 'i' },
+    { value: '1', type: 'number', numericValue: 1, label: 'j' }
   ];
   
   return { blocks, targetNumber: 15 };

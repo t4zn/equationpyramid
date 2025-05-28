@@ -291,7 +291,7 @@ export const GameScreen: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex flex-col items-center justify-center p-4 relative"
+      className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 flex flex-col overflow-hidden"
       style={{
         backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.9)), url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><rect width=\"100\" height=\"100\" fill=\"%23111827\"/><circle cx=\"20\" cy=\"20\" r=\"2\" fill=\"%23fbbf24\" opacity=\"0.6\"/><circle cx=\"80\" cy=\"40\" r=\"1.5\" fill=\"%23fbbf24\" opacity=\"0.4\"/><circle cx=\"40\" cy=\"80\" r=\"2\" fill=\"%23fbbf24\" opacity=\"0.5\"/></svg>')"
       }}
@@ -319,66 +319,67 @@ export const GameScreen: React.FC = () => {
 
       {/* Main Game Content - Only show when game is not completed */}
       {gameState.gameStatus !== 'completed' && (
-        <>
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-4xl font-bold text-yellow-400 mb-4">🔢 Equation Pyramid Challenge 🔢</h1>
-            <div className="flex justify-center space-x-8 text-white">
+        <div className="flex-1 flex flex-col h-screen max-h-screen">
+          {/* Compact Header */}
+          <div className="mb-2">
+            <div className="grid grid-cols-4 gap-1 text-white text-xs mb-2">
               <div className="text-center">
-                <div className="text-sm text-gray-300">Score</div>
-                <div className="text-2xl font-bold text-green-400">{gameState.score}</div>
+                <div className="text-gray-300">Score</div>
+                <div className="text-lg font-bold text-green-400">{gameState.score}</div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-300">Round</div>
-                <div className="text-2xl font-bold text-blue-400">{gameState.round}</div>
+                <div className="text-gray-300">Round</div>
+                <div className="text-lg font-bold text-blue-400">{gameState.round}</div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-300">Time</div>
-                <div className={`text-2xl font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : 'text-white'}`}>
+                <div className="text-gray-300">Time</div>
+                <div className={`text-lg font-bold ${gameState.timeRemaining <= 30 ? 'text-red-400' : 'text-white'}`}>
                   {Math.floor(gameState.timeRemaining / 60)}:{(gameState.timeRemaining % 60).toString().padStart(2, '0')}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-300">Found</div>
-                <div className="text-2xl font-bold text-purple-400">
+                <div className="text-gray-300">Found</div>
+                <div className="text-lg font-bold text-purple-400">
                   {foundCombinations.length}/{correctCombinations.length}
                 </div>
               </div>
             </div>
+
+            {/* Target Number */}
+            <Card className="mb-2 p-3 bg-gradient-to-r from-yellow-500 to-yellow-600 border-2 border-yellow-400">
+              <div className="text-center">
+                <div className="text-sm font-bold text-gray-800">🎯 TARGET 🎯</div>
+                <div className="text-3xl font-bold text-gray-900">{gameState.targetNumber}</div>
+              </div>
+            </Card>
           </div>
 
-          {/* Target Number */}
-          <Card className="mb-6 p-6 bg-gradient-to-r from-yellow-500 to-yellow-600 border-2 border-yellow-400 shadow-2xl">
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-800">🎯 TARGET 🎯</div>
-              <div className="text-5xl font-bold text-gray-900">{gameState.targetNumber}</div>
+          {/* Pyramid - Compact */}
+          <div className="flex-1 flex justify-center items-start mb-2">
+            <div className="scale-[0.7] -my-6">
+              <PyramidGrid
+                blocks={gameState.blocks}
+                selectedBlocks={gameState.selectedBlocks}
+                onBlockClick={handleBlockClick}
+              />
             </div>
-          </Card>
-
-          {/* Pyramid */}
-          <div className="mb-6">
-            <PyramidGrid
-              blocks={gameState.blocks}
-              selectedBlocks={gameState.selectedBlocks}
-              onBlockClick={handleBlockClick}
-            />
           </div>
 
-          {/* Letter Input */}
-          <div className="w-full max-w-md mb-6">
-            <div className="flex items-center space-x-3">
+          {/* Input and Submit */}
+          <div className="mb-2">
+            <div className="flex items-center space-x-2">
               <Input
-                placeholder="Enter block letters (e.g., 'abc')"
+                placeholder="Enter letters (abc)"
                 value={gameState.inputValue}
                 onChange={handleInputChange}
                 maxLength={3}
-                className="bg-gray-700 text-white border-2 border-yellow-500 focus:border-yellow-400 text-lg"
+                className="bg-gray-700 text-white border-2 border-yellow-500 focus:border-yellow-400 text-center text-lg h-10"
                 disabled={gameState.gameStatus !== 'playing'}
               />
               <Button
                 onClick={submitEquation}
                 disabled={gameState.selectedBlocks.length !== 3 || gameState.gameStatus !== 'playing'}
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-2 font-semibold"
+                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 h-10"
               >
                 Submit
               </Button>
@@ -387,14 +388,14 @@ export const GameScreen: React.FC = () => {
 
           {/* Selected Equation Preview */}
           {gameState.selectedBlocks.length > 0 && (
-            <Card className="mb-6 p-4 bg-gradient-to-r from-gray-800 to-gray-700 border-2 border-gray-600 w-full max-w-md shadow-lg">
+            <Card className="mb-2 p-2 bg-gray-800 border-gray-600">
               <div className="text-center text-white">
-                <div className="text-sm text-gray-300 mb-2">Selected Equation:</div>
-                <div className="text-xl font-mono">
+                <div className="text-xs text-gray-300">Selected:</div>
+                <div className="text-sm font-mono">
                   {gameState.selectedBlocks.map((index, i) => (
                     <span key={index}>
                       {gameState.blocks[index]?.label}({gameState.blocks[index]?.value})
-                      {i < gameState.selectedBlocks.length - 1 ? ' ' : ''}
+                      {i < gameState.selectedBlocks.length - 1 ? ' + ' : ''}
                     </span>
                   ))}
                   {gameState.selectedBlocks.length === 3 && ' = ?'}
@@ -404,38 +405,38 @@ export const GameScreen: React.FC = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <div className="flex space-x-2 mb-2">
             <Button 
               onClick={() => setGameState(prev => ({ ...prev, selectedBlocks: [], inputValue: '' }))}
               variant="outline"
-              className="border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900"
+              className="border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-gray-900 flex-1 h-8 text-sm"
             >
-              Clear Selection
+              Clear
             </Button>
             <Button
               onClick={nextPuzzle}
               variant="outline"
-              className="border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-gray-900"
+              className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-gray-900 flex-1 h-8 text-sm"
             >
-              Next Puzzle
+              Next
             </Button>
             <Button
               onClick={() => navigate('/home')}
               variant="outline"
-              className="border-2 border-gray-400 text-gray-400 hover:bg-gray-700"
+              className="border-gray-400 text-gray-400 hover:bg-gray-700 flex-1 h-8 text-sm"
             >
-              Back to Home
+              Home
             </Button>
           </div>
 
-          {/* Found Combinations */}
+          {/* Found Combinations - Compact */}
           {foundCombinations.length > 0 && (
-            <Card className="mb-4 p-4 bg-gradient-to-r from-green-800 to-green-700 border-2 border-green-600 w-full max-w-md shadow-lg">
+            <Card className="p-2 bg-gray-800 border-gray-600">
               <div className="text-white">
-                <div className="text-sm text-gray-200 mb-2 font-semibold">✅ Found Combinations:</div>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="text-xs text-gray-300 mb-1">✅ Found:</div>
+                <div className="grid grid-cols-4 gap-1">
                   {foundCombinations.map((combo, i) => (
-                    <div key={i} className="text-sm text-green-200 font-mono bg-green-900/50 px-2 py-1 rounded">
+                    <div key={i} className="text-xs text-green-400 font-mono bg-green-900/50 px-1 py-0.5 rounded text-center">
                       {combo.map(index => gameState.blocks[index]?.label).join('')}
                     </div>
                   ))}
@@ -443,26 +444,7 @@ export const GameScreen: React.FC = () => {
               </div>
             </Card>
           )}
-
-          {/* Equation History */}
-          {gameState.history.length > 0 && (
-            <Card className="p-4 bg-gradient-to-r from-gray-800 to-gray-700 border-2 border-gray-600 w-full max-w-md shadow-lg">
-              <div className="text-white">
-                <div className="text-sm text-gray-300 mb-2 font-semibold">📝 Recent Attempts:</div>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {gameState.history.slice(-5).map((item, i) => (
-                    <div 
-                      key={i} 
-                      className={`text-sm font-mono ${item.success ? 'text-green-400' : 'text-red-400'}`}
-                    >
-                      {item.equation} = {item.result} {item.success ? '✅' : '❌'}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Card>
-          )}
-        </>
+        </div>
       )}
     </div>
   );
