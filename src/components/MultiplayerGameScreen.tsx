@@ -287,35 +287,44 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
             </CardContent>
           </Card>
 
-          {/* Players Scores - Mobile */}
-          <div className="flex-1 min-h-0">
-            <Card className="bg-gray-800 border-gray-600 h-full">
-              <CardContent className="p-2">
-                <div className="text-gray-400 text-xs font-semibold mb-2 flex items-center">
-                  <Users size={12} className="mr-1" />
-                  Players
-                </div>
-                <div className="space-y-1">
-                  {players.map((player) => (
-                    <div key={player.id} className={`flex justify-between items-center ${
-                      player.id === currentPlayer?.id ? 'text-green-400' : 'text-gray-300'
-                    }`}>
-                      <span className="text-sm">{player.username}</span>
-                      <span className="text-sm font-bold">{player.score}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Pyramid Grid - Mobile */}
-          <Card className="bg-gray-800 border-purple-500">
-            <CardContent className="p-2">
+          <Card className="bg-gray-800 border-purple-500 flex-1 min-h-0">
+            <CardContent className="p-2 h-full">
               <PyramidGrid
                 blocks={blocks}
                 selectedBlocks={selectedBlocks}
                 onBlockClick={handleBlockClick}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Players Scores - Mobile */}
+          <Card className="bg-gray-800 border-gray-600">
+            <CardContent className="p-2">
+              <div className="text-gray-400 text-xs font-semibold mb-2 flex items-center">
+                <Users size={12} className="mr-1" />
+                Players
+              </div>
+              <div className="space-y-1">
+                {players.map((player) => (
+                  <div key={player.id} className={`flex justify-between items-center ${
+                    player.id === currentPlayer?.id ? 'text-green-400' : 'text-gray-300'
+                  }`}>
+                    <span className="text-sm">{player.username}</span>
+                    <span className="text-sm font-bold">{player.score}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Correct Combinations - Mobile */}
+          <Card className="bg-gray-800 border-gray-600">
+            <CardContent className="p-2">
+              <CorrectCombinations 
+                combinations={[]} 
+                isMultiplayer={true}
+                allPlayersCombinations={allPlayersCombinations}
               />
             </CardContent>
           </Card>
@@ -329,12 +338,12 @@ const MultiplayerGameScreen: React.FC<MultiplayerGameScreenProps> = ({
                     value={letterInput}
                     onChange={(e) => setLetterInput(e.target.value)}
                     placeholder="Enter 3 letters"
-                    className="bg-gray-700 text-white border-gray-600 text-center text-sm"
+                    className="bg-gray-700 text-white border-gray-600 text-center text-sm flex-1"
                     maxLength={3}
                   />
                   <Button
                     onClick={handleLetterSubmit}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 text-sm"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 text-sm whitespace-nowrap"
                   >
                     Submit
                   </Button>
