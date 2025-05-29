@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import SignupPage from "./pages/SignupPage";
 import ChooseUsernamePage from "./pages/ChooseUsernamePage";
 import LoginFormPage from "./pages/LoginFormPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/multiplayer" element={<MultiplayerPage />} />
             <Route path="/multiplayer/local" element={<LocalMultiplayerPage />} />
             <Route path="/multiplayer/online" element={<OnlineMultiplayerPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

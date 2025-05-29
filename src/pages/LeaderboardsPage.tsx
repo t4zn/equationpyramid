@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,11 +9,9 @@ import { Trophy, Medal, Award } from 'lucide-react';
 
 interface LeaderboardEntry {
   id: string;
+  username: string;
   score: number;
-  rounds_completed: number;
   created_at: string;
-  user_id: string;
-  username?: string;
 }
 
 const LeaderboardsPage = () => {
@@ -60,28 +57,28 @@ const LeaderboardsPage = () => {
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
-      case 1: return <Trophy className="w-5 h-5 text-yellow-500" />;
-      case 2: return <Medal className="w-5 h-5 text-gray-400" />;
-      case 3: return <Award className="w-5 h-5 text-amber-600" />;
+      case 1: return <Trophy className="w-5 h-5 text-white" />;
+      case 2: return <Medal className="w-5 h-5 text-gray-300" />;
+      case 3: return <Award className="w-5 h-5 text-gray-400" />;
       default: return <span className="w-5 h-5 flex items-center justify-center text-gray-400 font-bold text-sm">{rank}</span>;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-[#232323] to-[#111] flex items-center justify-center p-4">
         <div className="text-white text-lg">Loading leaderboards...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-2 sm:p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#232323] to-[#111] p-2 sm:p-4 relative">
       <BackButton onClick={() => navigate('/home')} />
       
       <div className="max-w-lg mx-auto pt-16">
-        <Card className="bg-gradient-to-br from-gray-800 to-gray-700 border-2 border-yellow-500 shadow-2xl">
-          <CardHeader className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-black p-4">
+        <Card className="bg-[#333] border-2 border-[#444] shadow-2xl">
+          <CardHeader className="bg-[#222] text-white p-4">
             <CardTitle className="text-xl sm:text-2xl font-bold text-center flex items-center justify-center">
               <Trophy className="mr-2" size={24} />
               Leaderboards
@@ -95,39 +92,21 @@ const LeaderboardsPage = () => {
                 <p className="text-gray-400 text-sm">Be the first to set a high score.</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-2">
                 {leaderboard.map((entry, index) => (
                   <div
                     key={entry.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      index === 0
-                        ? 'bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-yellow-500'
-                        : index === 1
-                        ? 'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-gray-400'
-                        : index === 2
-                        ? 'bg-gradient-to-r from-amber-600/20 to-amber-700/20 border-amber-600'
-                        : 'bg-gray-800/50 border-gray-600'
+                    className={`flex items-center justify-between p-3 rounded-lg ${
+                      entry.username === authState.user?.username
+                        ? 'bg-[#444]'
+                        : 'bg-[#222]'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-3">
                       {getRankIcon(index + 1)}
-                      <div>
-                        <div className="text-white font-semibold text-sm sm:text-base">
-                          {entry.username}
-                        </div>
-                        <div className="text-gray-300 text-xs">
-                          {entry.rounds_completed} rounds
-                        </div>
-                      </div>
+                      <span className="text-white font-medium">{entry.username}</span>
                     </div>
-                    <div className="text-right">
-                      <div className="text-lg sm:text-xl font-bold text-green-400">
-                        {entry.score}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(entry.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
+                    <span className="text-white font-bold">{entry.score}</span>
                   </div>
                 ))}
               </div>

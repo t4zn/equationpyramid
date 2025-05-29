@@ -19,7 +19,7 @@ const HomePage: React.FC = () => {
         <CardHeader className="bg-[#222] text-white p-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl sm:text-2xl font-bold">
-              🔢 Equation Pyramid 🔢
+              Numora
             </CardTitle>
             <Button 
               onClick={handleLogout}
@@ -29,7 +29,7 @@ const HomePage: React.FC = () => {
             </Button>
           </div>
           <div className="text-center text-xs sm:text-sm font-semibold text-gray-300 mt-1">
-            Welcome, {authState.user?.email?.split('@')[0] || 'Player'}!
+            Master the equation pyramid!
           </div>
         </CardHeader>
         <CardContent className="space-y-2 p-3">

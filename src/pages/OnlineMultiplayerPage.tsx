@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,17 +32,17 @@ const OnlineMultiplayerPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#232323] to-[#111] flex flex-col items-center justify-center p-4 relative">
       <BackButton onClick={() => navigate('/multiplayer')} />
       
-      <Card className="w-full max-w-md bg-gray-800 border-green-500">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-green-400 flex items-center justify-center">
+      <Card className="w-full max-w-md bg-[#333] border-2 border-[#444] shadow-2xl">
+        <CardHeader className="bg-[#222] text-white p-6">
+          <CardTitle className="text-2xl font-bold text-center flex items-center justify-center">
             <Wifi className="mr-2" size={24} />
             Online Multiplayer
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6">
           {/* Create Room Section */}
           <div className="space-y-4">
             <div className="text-center text-gray-300 text-lg font-semibold">
@@ -61,8 +60,8 @@ const OnlineMultiplayerPage = () => {
                     size="sm"
                     className={`${
                       playerCount === count 
-                        ? 'bg-green-600 hover:bg-green-700 text-white' 
-                        : 'border-green-500 text-green-400 hover:bg-green-500/10'
+                        ? 'bg-[#444] hover:bg-[#555] text-white' 
+                        : 'border-[#444] text-gray-300 hover:bg-[#444]'
                     }`}
                   >
                     {count}
@@ -73,7 +72,7 @@ const OnlineMultiplayerPage = () => {
             
             <Button 
               onClick={createRoom}
-              className="w-full bg-green-600 hover:bg-green-700 text-white py-3 flex items-center justify-center"
+              className="w-full bg-[#444] hover:bg-[#555] text-white py-3 flex items-center justify-center"
             >
               <Plus className="mr-2" size={20} />
               Create Room
@@ -82,10 +81,10 @@ const OnlineMultiplayerPage = () => {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-600" />
+              <span className="w-full border-t border-[#444]" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-gray-800 px-2 text-gray-400">Or</span>
+              <span className="bg-[#333] px-2 text-gray-400">Or</span>
             </div>
           </div>
 
@@ -100,14 +99,14 @@ const OnlineMultiplayerPage = () => {
                 value={joinRoomId}
                 onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
                 placeholder="Enter room code"
-                className="bg-gray-700 text-white border-gray-600 text-center text-lg tracking-widest"
+                className="bg-[#444] text-white border-[#444] text-center text-lg tracking-widest"
                 maxLength={6}
               />
               
               <Button 
                 onClick={joinRoom}
                 disabled={!joinRoomId.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 flex items-center justify-center"
+                className="w-full bg-[#444] hover:bg-[#555] text-white py-3 flex items-center justify-center"
               >
                 <LogIn className="mr-2" size={20} />
                 Join Room

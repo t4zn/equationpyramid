@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,17 +16,17 @@ const LocalMultiplayerPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4 relative">
+    <div className="min-h-screen bg-gradient-to-br from-[#232323] to-[#111] flex flex-col items-center justify-center p-4 relative">
       <BackButton onClick={() => navigate('/multiplayer')} />
       
-      <Card className="w-full max-w-md bg-gray-800 border-blue-500">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-blue-400 flex items-center justify-center">
+      <Card className="w-full max-w-md bg-[#333] border-2 border-[#444] shadow-2xl">
+        <CardHeader className="bg-[#222] text-white p-6">
+          <CardTitle className="text-2xl font-bold text-center flex items-center justify-center">
             <Users className="mr-2" size={24} />
             Local Multiplayer
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6">
           <div className="space-y-4">
             <div className="text-center text-gray-300">
               Select number of players:
@@ -41,8 +40,8 @@ const LocalMultiplayerPage = () => {
                   variant={playerCount === count ? "default" : "outline"}
                   className={`py-3 ${
                     playerCount === count 
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                      : 'border-blue-500 text-blue-400 hover:bg-blue-500/10'
+                      ? 'bg-[#444] hover:bg-[#555] text-white' 
+                      : 'border-[#444] text-gray-300 hover:bg-[#444]'
                   }`}
                 >
                   {count} Players
@@ -53,7 +52,7 @@ const LocalMultiplayerPage = () => {
           
           <Button 
             onClick={() => setGameStarted(true)}
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg"
+            className="w-full bg-[#444] hover:bg-[#555] text-white py-3 text-lg"
           >
             Start Game
           </Button>
