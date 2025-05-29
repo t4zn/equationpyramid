@@ -47,7 +47,7 @@ const LoginFormPage = () => {
           disabled={authState.loading}
         >
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-          {authState.loading ? 'Signing in...' : 'Log in with Google'}
+          {authState.loading ? 'Signing in...' : 'Continue with Google'}
         </Button>
 
         <div className="flex items-center w-full my-4">
@@ -56,7 +56,7 @@ const LoginFormPage = () => {
           <div className="flex-1 h-px bg-gray-600" />
         </div>
 
-        <form onSubmit={handleSubmit} className="w-full flex flex-col items-center gap-6 mt-8">
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6">
           <div className="relative w-full">
             <Input
               type="text"
@@ -90,9 +90,9 @@ const LoginFormPage = () => {
             {authState.loading ? 'Logging In...' : 'Log in'}
           </Button>
 
-           {authState.error && (
-              <p className="text-red-400 text-sm text-center mt-4">{authState.error}</p>
-            )}
+          {authState.error && (
+            <p className="text-red-400 text-sm text-center mt-4">{authState.error}</p>
+          )}
         </form>
       </div>
     </div>
