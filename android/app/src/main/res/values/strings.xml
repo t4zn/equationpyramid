@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Equation Pyramid</string>
-    <string name="title_activity_main">Equation Pyramid</string>
+    <string name="app_name">Numora</string>
+    <string name="title_activity_main">Numora</string>
     <string name="package_name">com.equationpyramid.app</string>
     <string name="custom_url_scheme">com.equationpyramid.app</string>
 </resources>

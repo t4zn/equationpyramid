@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BackButton } from '@/components/BackButton';
-// import { supabase } from '@/integrations/supabase/client'; // Commenting out Supabase imports
-import { Camera, User } from 'lucide-react';
-// import { useToast } from '@/hooks/use-toast'; // Commenting out useToast
+import { supabase } from '@/integrations/supabase/client';
+import { Camera, User, ChevronRight } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Manually adding a subset of country data for demonstration
 const countries = [
@@ -209,103 +209,272 @@ const countries = [
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const SettingsPage = () => {
-  const { authState } = useAuth();
-  // const navigate = useNavigate(); // Commenting out useNavigate as navigation is not needed for UI only
-  // const { toast = () => {} } = useToast(); // Commenting out useToast and providing a default empty function
-  const [username, setUsername] = useState(authState.user?.username || '');
-  const [avatarUrl, setAvatarUrl] = useState(authState.user?.avatar_url || '');
-  // const [updating, setUpdating] = useState(false); // Commenting out state related to functionality
-  // const [uploading, setUploading] = useState(false); // Commenting out state related to functionality
+  const navigate = useNavigate();
+  const { authState, signOut } = useAuth();
+  const { toast } = useToast();
   const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState({ name: 'Kuwait', flag: '🇰🇼' }); // Initial country
+  const [selectedCountry, setSelectedCountry] = useState(countries[0]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [savedCountry, setSavedCountry] = useState<{ name: string; flag: string } | null>(null);
 
-  // React.useEffect(() => { // Commenting out effect hook
-  //   if (!authState.user && !authState.loading) {
-  //     navigate('/login');
-  //   }
-  // }, [authState.user, authState.loading, navigate]);
+  useEffect(() => {
+    if (authState.user) {
+      // Fetch user profile data
+      const fetchProfile = async () => {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('username, avatar_url, country')
+          .eq('id', authState.user.id)
+          .single();
 
-  // Commenting out functionality handlers
-  // const handleUpdateProfile = async () => { /* ... */ };
-  // const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => { /* ... */ };
+        if (error) {
+          console.error('Error fetching profile:', error);
+          // Handle error appropriately, maybe set default state or show a message
+          return;
+        }
 
-  const handleCountrySelect = (country) => {
+        if (profile) {
+          setUsername(profile.username || '');
+          setAvatarUrl(profile.avatar_url);
+          // Find the country object from the full list based on saved country name
+          const countryData = countries.find(c => c.name === profile.country);
+          if (countryData) {
+            setSelectedCountry(countryData);
+            setSavedCountry(countryData);
+          }
+        }
+      };
+
+      fetchProfile();
+    } else {
+      // Clear state if user logs out while on settings page
+      setUsername('');
+      setAvatarUrl(null);
+      setSelectedCountry(countries[0]);
+      setSavedCountry(null);
+    }
+  }, [authState.user]); // Depend on authState.user to refetch when user changes
+
+  const handleCountrySelect = async (country: { name: string; flag: string }) => {
     setSelectedCountry(country);
     setShowCountryPicker(false);
-    setSearchQuery('');
+    setSearchQuery(''); // Clear search query on selection
+
+    if (authState.user && savedCountry?.name !== country.name) {
+      // Save selected country to profile
+      const { error } = await supabase
+        .from('profiles')
+        .update({ country: country.name })
+        .eq('id', authState.user.id);
+
+      if (error) {
+        console.error('Error updating country:', error);
+        toast({
+          title: "Error",
+          description: "Failed to update country",
+          variant: "destructive"
+        });
+      } else {
+        setSavedCountry(country);
+        toast({
+          title: "Success",
+          description: "Country updated successfully"
+        });
+      }
+    }
   };
 
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Debounce timer for username updates
+  const [usernameUpdateTimer, setUsernameUpdateTimer] = useState<NodeJS.Timeout | null>(null);
+
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newUsername = e.target.value;
+    setUsername(newUsername);
+
+    // Clear previous timer to debounce
+    if (usernameUpdateTimer) {
+      clearTimeout(usernameUpdateTimer);
+    }
+
+    // Set a new timer to update username after 1 second of no typing
+    const newTimer = setTimeout(async () => {
+      if (authState.user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ username: newUsername })
+          .eq('id', authState.user.id);
+
+        if (error) {
+          console.error('Error updating username:', error);
+          toast({
+            title: "Error",
+            description: "Failed to update username",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: "Username updated successfully"
+          });
+        }
+      }
+    }, 1000); // 1 second debounce delay
+
+    setUsernameUpdateTimer(newTimer);
+  };
+
+   // Clear debounce timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (usernameUpdateTimer) {
+        clearTimeout(usernameUpdateTimer);
+      }
+    };
+  }, [usernameUpdateTimer]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !authState.user) return;
+
+    try {
+      setIsUploading(true);
+
+      // Upload image to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${authState.user.id}/${Math.random()}.${fileExt}`;
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', authState.user.id);
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully"
+      });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile picture",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "Signed Out",
+      description: "You have been successfully logged out.",
+    });
+    navigate('/login');
+  };
+
+  // TODO: Implement actual functionality for these.
+  const handleTermsClick = () => {
+    console.log('Terms and Conditions clicked');
+    // Ideally, navigate to a /terms page or open a modal with the terms.
+    // Example: navigate('/terms');
+     toast({
+        title: "Terms and Conditions",
+        description: "Placeholder: Link to Terms and Conditions will go here.",
+      });
+  };
+
+  const handleChangePasswordClick = () => {
+    console.log('Change Password clicked');
+    // This should likely open a modal or navigate to a form to enter
+    // the current password and new password, then call Supabase Auth update.
+    // Example: supabase.auth.updateUser({ password: newPassword });
+     toast({
+        title: "Change Password",
+        description: "Placeholder: Functionality to change password will be implemented here.",
+      });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      {/* <BackButton onClick={() => navigate('/home')} /> Commenting out BackButton */}
-
-      {/* Settings Header */}
-      <div className="w-full bg-gray-800 p-4 text-center">
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-      </div>
-
-      {/* Scrollable Content Area */}
-      <div className="flex-grow overflow-y-auto p-4">
-        <Card className="w-full max-w-md mx-auto bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">
-              Profile
+    <div className="min-h-screen bg-gradient-to-br from-[#232323] to-[#111] flex flex-col items-center justify-start p-4 relative">
+      <BackButton onClick={() => navigate('/home')} />
+      
+      <div className="w-full max-w-md mt-16">
+        <Card className="bg-[#333] border-2 border-[#444] shadow-2xl">
+          <CardHeader className="bg-[#222] text-white p-3">
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">
+              Settings
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Photo */}
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Photo</span>
-              <div className="relative">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={avatarUrl} alt="Profile" />
-                  <AvatarFallback className="bg-gray-600 text-white">
-                    <User size={24} />
-                  </AvatarFallback>
-                </Avatar>
-                {/* Placeholder for camera icon/upload button */}
-                {/* Commenting out the label and input for file upload */}
-                {/* <label className="absolute bottom-0 right-0 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-full p-1 cursor-pointer transition-colors">
-                   <Camera size={12} />
-                   <input
-                     type="file"
-                     accept="image/*"
-                     onChange={handleAvatarUpload}
-                     disabled={uploading}
-                     className="hidden"
-                   />
-                </label> */}
-                 <div className="absolute bottom-0 right-0 bg-gray-600 hover:bg-gray-500 text-white rounded-full p-1 cursor-pointer transition-colors">
-                   <Camera size={12} />
+          <CardContent className="p-4 space-y-4">
+            {/* Profile Section */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Avatar className="w-20 h-20 border-2 border-[#444]">
+                    <AvatarImage src={avatarUrl || undefined} />
+                    <AvatarFallback className="bg-[#444] text-white">
+                      {username?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <label 
+                    htmlFor="avatar-upload" 
+                    className="absolute bottom-0 right-0 bg-[#444] p-1.5 rounded-full cursor-pointer hover:bg-[#555] transition-colors"
+                  >
+                    <Camera className="w-4 h-4 text-white" />
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                      disabled={isUploading}
+                    />
+                  </label>
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    placeholder="Enter your name"
+                    value={username}
+                    onChange={handleUsernameChange}
+                    className="bg-[#444] border-[#555] text-white placeholder:text-gray-400"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Name */}
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Name</span>
-              <Input
-                value={username}
-                readOnly // Make readOnly as functionality is removed
-                className="bg-gray-700 text-gray-300 border-gray-600 w-1/2"
-                placeholder="Ahmad"
-              />
-            </div>
-
-            {/* Country */}
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Country</span>
+            {/* Country Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Country</label>
               <div 
-                className="flex items-center space-x-2 bg-gray-700 text-gray-300 border border-gray-600 rounded-md px-3 py-2 w-1/2 cursor-pointer hover:bg-gray-600 transition-colors"
                 onClick={() => setShowCountryPicker(true)}
+                className="flex items-center justify-between p-2 bg-[#444] rounded-md cursor-pointer hover:bg-[#555] transition-colors"
               >
-                <span>{selectedCountry.flag}</span>
-                <span>{selectedCountry.name}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">{selectedCountry.flag}</span>
+                  <span className="text-white">{selectedCountry.name}</span>
+                </div>
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
               </div>
             </div>
 
@@ -313,146 +482,80 @@ const SettingsPage = () => {
             <div className="flex items-center justify-between">
               <span className="text-gray-300">Email</span>
               <span className="text-gray-500 text-sm">
-                {authState.user?.email || 'kaptantaizun21@gmail.com'} {/* Use placeholder if email is null */}
+                {authState.user?.email || 'Not available'}
               </span>
             </div>
+
+             {/* Account Settings */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Account</label>
+              <div 
+                className="flex items-center justify-between p-2 bg-[#444] rounded-md cursor-pointer hover:bg-[#555] transition-colors"
+                onClick={handleTermsClick}
+              >
+                <span className="text-white">Terms and conditions</span>
+                 <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+               <div 
+                className="flex items-center justify-between p-2 bg-[#444] rounded-md cursor-pointer hover:bg-[#555] transition-colors"
+                 onClick={handleChangePasswordClick}
+              >
+                <span className="text-white">Change password</span>
+                 <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+               <div 
+                className="flex items-center justify-between p-2 bg-[#444] rounded-md cursor-pointer hover:bg-[#555] transition-colors"
+                 onClick={handleLogout}
+              >
+                <span className="text-red-500">Logout</span>
+                 <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+            </div>
+
           </CardContent>
         </Card>
-
-        {/* Appearance Section */}
-        <Card className="w-full max-w-md mx-auto mt-6 bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">
-              Appearance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {/* Mode */}
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <span className="text-gray-300">Mode</span>
-              <span className="text-gray-500 flex items-center">
-                Dark <span className="ml-1">{'>'}</span>
-              </span>
-            </div>
-            {/* Language */}
-            <div className="flex items-center justify-between py-2">
-              <span className="text-gray-300">Language</span>
-              <span className="text-gray-500 flex items-center">
-                English <span className="ml-1">{'>'}</span>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Section */}
-        <Card className="w-full max-w-md mx-auto mt-6 bg-gray-800 border-gray-700 mb-20">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold text-white">
-              Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {/* Terms and conditions */}
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <span className="text-gray-300">Terms and conditions</span>
-              <span className="text-gray-500">{'>'}</span>
-            </div>
-            {/* Change password */}
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <span className="text-gray-300">Change password</span>
-              <span className="text-gray-500">{'>'}</span>
-            </div>
-            {/* Remove email */}
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <span className="text-gray-300">Remove email</span>
-              <span className="text-gray-500">{'>'}</span>
-            </div>
-            {/* Delete user */}
-            <div className="flex items-center justify-between py-2 border-b border-gray-700">
-              <span className="text-gray-300">Delete user</span>
-              <span className="text-gray-500">{'>'}</span>
-            </div>
-            {/* Logout */}
-            <div className="flex items-center justify-between py-2">
-              <span className="text-red-500">Logout</span>
-              <span className="text-gray-500">{'>'}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-800 h-16 flex justify-around items-center">
-        {/* Home Icon Placeholder */}
-        <div className="flex flex-col items-center text-gray-400">
-          {/* Replace with actual icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m0 0l7 7m-7-7v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-          </svg>
-          <span className="text-xs">Home</span>
-        </div>
-        {/* Friends Icon Placeholder */}
-        <div className="flex flex-col items-center text-gray-400">
-          {/* Replace with actual icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126.1283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zm-4 4a2 2 0 10-4 0 2 2 0 004 0z" />
-          </svg>
-          <span className="text-xs">Friends</span>
-        </div>
-        {/* Leaderboard Icon (Trophy) */}
-        <div className="flex flex-col items-center text-gray-400">
-          {/* Trophy Icon SVG */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 15.5a3.5 3.5 0 10-3.5 3.5v.5h5v-.5a3.5 3.5 0 10-1.5-3zM16 11V8a4 4 0 00-8 0v3m-4 3h16l-1.5 3H5.5L4 14z" />
-          </svg>
-          <span className="text-xs">Leaderboard</span>
-        </div>
-        {/* Settings Icon (Selected) */}
-        <div className="flex flex-col items-center text-yellow-500">
-          {/* Settings Icon SVG */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span className="text-xs">Settings</span>
-        </div>
       </div>
 
       {/* Country Picker Modal */}
       {showCountryPicker && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-4 rounded-lg h-3/4 w-3/4 max-w-sm flex flex-col">
-            <h2 className="text-xl font-bold text-white mb-4">Select Country</h2>
-            <div className="mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#333] rounded-lg w-full max-w-md max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b border-[#444]">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Select Country</h3>
+                <button
+                  onClick={() => setShowCountryPicker(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
               <Input
                 type="text"
-                placeholder="Search country..."
+                placeholder="Search countries..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-gray-700 text-gray-300 border-gray-600 w-full"
+                className="bg-[#444] border-[#555] text-white placeholder:text-gray-400"
               />
             </div>
-            <div className="flex-grow overflow-y-auto space-y-2">
-              {filteredCountries.map((country) => (
-                <div
-                  key={country.name}
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 cursor-pointer"
-                  onClick={() => handleCountrySelect(country)}
-                >
-                  <span>{country.flag}</span>
-                  <span className="text-gray-300">{country.name}</span>
-                </div>
-              ))}
+            <div className="overflow-y-auto flex-1 p-4">
+              <div className="space-y-2">
+                {countries
+                  .filter(country => 
+                    country.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                  .map((country) => (
+                    <div
+                      key={country.name}
+                      onClick={() => handleCountrySelect(country)}
+                      className="flex items-center space-x-2 p-2 rounded-md cursor-pointer hover:bg-[#444] transition-colors"
+                    >
+                      <span className="text-xl">{country.flag}</span>
+                      <span className="text-white">{country.name}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
-            <button
-              className="mt-4 bg-gray-700 text-white p-2 rounded-md hover:bg-gray-600 transition-colors"
-              onClick={() => {
-                setShowCountryPicker(false);
-                setSearchQuery('');
-              }}
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

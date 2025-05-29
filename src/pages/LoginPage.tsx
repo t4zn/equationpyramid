@@ -15,7 +15,7 @@ const LoginPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#232323] to-[#111] p-4 relative">
       {/* Top bar: Title container and Log in button */}
       <div className="w-full max-w-md flex flex-col items-center relative mb-24 mt-8">
-        <span className="font-league-spartan text-base tracking-wide text-white text-center block w-full">EQUATION PYRAMID</span>
+        <span className="font-league-spartan text-base tracking-wide text-white text-center block w-full">Numora</span>
         {/* Log in button absolutely positioned */}
         <Button
           onClick={() => navigate('/login')}
