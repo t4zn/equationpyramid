@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AuthState, User } from '@/types/auth';
@@ -8,6 +7,7 @@ type AuthContextType = {
   authState: AuthState;
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -162,6 +162,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      setAuthState(prev => ({ ...prev, loading: true, error: null }));
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      setAuthState(prev => ({ 
+        ...prev, 
+        loading: false,
+        error: error.message || 'Failed to sign in with Google' 
+      }));
+      toast({
+        title: "Google sign-in failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setAuthState(prev => ({ ...prev, loading: false }));
+    }
+  };
+
   const signOut = async () => {
     try {
       setAuthState(prev => ({ ...prev, loading: true, error: null }));
@@ -204,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authState,
     signUp,
     signIn,
+    signInWithGoogle,
     signOut
   };
 

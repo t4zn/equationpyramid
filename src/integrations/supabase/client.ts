@@ -8,4 +8,22 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create a secure Supabase client with additional security options
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce', // Use PKCE flow for enhanced security
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10, // Rate limit realtime events
+    },
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'equation-pyramid',
+    },
+  },
+});

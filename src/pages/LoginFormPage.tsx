@@ -8,18 +8,16 @@ import { useAuth } from '../contexts/AuthContext';
 const LoginFormPage = () => {
   const [emailOrUsername, setEmailOrUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { authState, signIn } = useAuth();
+  const { authState, signIn, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Assuming signIn can handle either email or username
     await signIn(emailOrUsername, password);
   };
 
-  const handleGoogleSignIn = () => {
-    // TODO: Integrate Google sign-in logic here
-    alert('Google sign-in coming soon!');
+  const handleGoogleSignIn = async () => {
+    await signInWithGoogle();
   };
 
   // Redirect if already logged in
@@ -43,13 +41,14 @@ const LoginFormPage = () => {
       </Button>
       <div className="w-full max-w-md flex flex-col items-center">
         <Button
-            type="button"
-            onClick={handleGoogleSignIn}
-            className="w-full bg-[#444] text-white font-fredoka text-lg rounded-2xl py-4 flex items-center justify-center gap-3 shadow-none mb-8"
-          >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
-            Log in with Google
-          </Button>
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="w-full bg-[#444] text-white font-fredoka text-lg rounded-2xl py-4 flex items-center justify-center gap-3 shadow-none mb-8"
+          disabled={authState.loading}
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
+          {authState.loading ? 'Signing in...' : 'Log in with Google'}
+        </Button>
 
         <div className="flex items-center w-full my-4">
           <div className="flex-1 h-px bg-gray-600" />

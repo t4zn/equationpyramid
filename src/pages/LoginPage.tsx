@@ -1,9 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { signInWithGoogle } = useAuth();
+
+  const handleGoogleSignIn = async () => {
+    await signInWithGoogle();
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#232323] to-[#111] p-4 relative">
@@ -40,7 +46,7 @@ const LoginPage = () => {
           </div>
           <Button
             type="button"
-            onClick={() => alert('Google sign-in coming soon!')}
+            onClick={handleGoogleSignIn}
             className="w-full bg-[#444] text-white font-fredoka text-lg rounded-2xl py-4 flex items-center justify-center gap-3 shadow-none"
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6" />
