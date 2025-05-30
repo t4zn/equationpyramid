@@ -219,11 +219,18 @@ const SettingsPage = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [savedCountry, setSavedCountry] = useState<{ name: string; flag: string } | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
+    console.log('useEffect triggered. authState.user:', authState.user);
     if (authState.user) {
       // Fetch user profile data
       const fetchProfile = async () => {
+        console.log('Fetching profile for user ID:', authState.user.id);
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('username, avatar_url, country')
@@ -236,6 +243,7 @@ const SettingsPage = () => {
           return;
         }
 
+        console.log('Fetched profile data:', profile);
         if (profile) {
           setUsername(profile.username || '');
           setAvatarUrl(profile.avatar_url);
@@ -403,13 +411,48 @@ const SettingsPage = () => {
 
   const handleChangePasswordClick = () => {
     console.log('Change Password clicked');
-    // This should likely open a modal or navigate to a form to enter
-    // the current password and new password, then call Supabase Auth update.
-    // Example: supabase.auth.updateUser({ password: newPassword });
-     toast({
-        title: "Change Password",
-        description: "Placeholder: Functionality to change password will be implemented here.",
+    setShowPasswordModal(true);
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmNewPassword) {
+      toast({
+        title: "Error",
+        description: "New passwords do not match",
+        variant: "destructive"
       });
+      return;
+    }
+
+    setIsChangingPassword(true);
+    // Supabase does not have a direct method to change password with current password for security reasons.
+    // The standard way is to use a password reset flow (e.g., sending a reset email).
+    // However, if you are implementing a re-authentication step before changing password,
+    // you would typically sign in the user again with their email and current password
+    // before calling updateUser. For this example, we'll directly call updateUser
+    // assuming a re-authentication or other security measure is handled elsewhere.
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      console.error('Error changing password:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Password changed successfully",
+      });
+      setShowPasswordModal(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    }
+    setIsChangingPassword(false);
   };
 
   return (
@@ -559,6 +602,51 @@ const SettingsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#333] rounded-lg w-full max-w-sm flex flex-col p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-white text-center">Change Password</h3>
+            <Input
+              type="password"
+              placeholder="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="bg-[#444] border-[#555] text-white placeholder:text-gray-400"
+            />
+            <Input
+              type="password"
+              placeholder="New Password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="bg-[#444] border-[#555] text-white placeholder:text-gray-400"
+            />
+            <Input
+              type="password"
+              placeholder="Confirm New Password"
+              value={confirmNewPassword}
+              onChange={(e) => setConfirmNewPassword(e.target.value)}
+              className="bg-[#444] border-[#555] text-white placeholder:text-gray-400"
+            />
+            <Button 
+              onClick={handleChangePassword}
+              className="bg-nav-active hover:bg-yellow-700 text-white"
+              disabled={isChangingPassword}
+            >
+              {isChangingPassword ? 'Changing...' : 'Change Password'}
+            </Button>
+            <Button 
+              onClick={() => setShowPasswordModal(false)}
+              variant="outline"
+              className="border-gray-500 bg-black text-white hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

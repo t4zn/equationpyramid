@@ -27,7 +27,7 @@ const LoginPage = () => {
 
       <div className="w-full max-w-md flex flex-col items-center text-center px-4">
         {/* Slogan and Hex Image */}
-        <h1 className="font-league-spartan text-4xl md:text-5xl font-bold text-white mb-12">Pick and Click,<br />Solve It Quick!</h1>
+        <h1 className="font-league-spartan text-4xl md:text-5xl font-bold text-white mb-12">Master the Equation Pyramid!</h1>
         <img src="/hex.png" alt="Equation Pyramid" className="mx-auto my-8 w-32 h-32" />
 
         {/* Auth Buttons */}

@@ -18,6 +18,8 @@ import SignupPage from "./pages/SignupPage";
 import ChooseUsernamePage from "./pages/ChooseUsernamePage";
 import LoginFormPage from "./pages/LoginFormPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
+import MainLayout from "./components/MainLayout";
+import FriendsPage from "./pages/FriendsPage";
 
 const queryClient = new QueryClient();
 
@@ -29,19 +31,25 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Routes without the bottom navigation bar */}
             <Route path="/" element={<LoginPage />} />
             <Route path="/login" element={<LoginFormPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/choose-username" element={<ChooseUsernamePage />} />
-            <Route path="/home" element={<HomePage />} />
             <Route path="/game" element={<Index />} />
-            <Route path="/leaderboards" element={<LeaderboardsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/how-to-play" element={<HowToPlayPage />} />
             <Route path="/multiplayer" element={<MultiplayerPage />} />
             <Route path="/multiplayer/local" element={<LocalMultiplayerPage />} />
             <Route path="/multiplayer/online" element={<OnlineMultiplayerPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+            {/* Routes with the bottom navigation bar */}
+            <Route path="/home" element={<MainLayout><HomePage /></MainLayout>} />
+            <Route path="/friends" element={<MainLayout><FriendsPage /></MainLayout>} />
+            <Route path="/leaderboards" element={<MainLayout><LeaderboardsPage /></MainLayout>} />
+            <Route path="/settings" element={<MainLayout><SettingsPage /></MainLayout>} />
+
+            {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
