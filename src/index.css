@@ -99,3 +99,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .hexagon {
+    position: relative;
+    width: 100px; /* Adjust size as needed */
+    height: 110px; /* Adjust height for hexagon shape */
+    margin: 5px; /* Space between hexagons */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+}

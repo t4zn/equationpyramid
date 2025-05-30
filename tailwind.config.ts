@@ -95,6 +95,7 @@ export default {
 				'league-spartan': ['"League Spartan"', 'sans-serif'],
 				'poppins': ['Poppins', 'sans-serif'],
 				'fredoka': ['Fredoka', 'sans-serif'],
+				'inter': ['Inter', 'sans-serif'],
 			},
 		}
 	},

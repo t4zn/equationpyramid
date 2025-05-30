@@ -21,6 +21,7 @@ import AuthCallbackPage from "./pages/AuthCallbackPage";
 import MainLayout from "./components/MainLayout";
 import FriendsPage from "./pages/FriendsPage";
 import JoinRoomPage from "./pages/JoinRoomPage";
+import GamePage from "./pages/GamePage";
 
 const queryClient = new QueryClient();
 
@@ -37,7 +38,7 @@ const App = () => (
             <Route path="/login" element={<LoginFormPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/choose-username" element={<ChooseUsernamePage />} />
-            <Route path="/game" element={<Index />} />
+            <Route path="/game" element={<GamePage />} />
             <Route path="/how-to-play" element={<HowToPlayPage />} />
             <Route path="/multiplayer" element={<MultiplayerPage />} />
             <Route path="/multiplayer/local" element={<LocalMultiplayerPage />} />
