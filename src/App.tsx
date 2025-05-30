@@ -20,6 +20,7 @@ import LoginFormPage from "./pages/LoginFormPage";
 import AuthCallbackPage from "./pages/AuthCallbackPage";
 import MainLayout from "./components/MainLayout";
 import FriendsPage from "./pages/FriendsPage";
+import JoinRoomPage from "./pages/JoinRoomPage";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/multiplayer" element={<MultiplayerPage />} />
             <Route path="/multiplayer/local" element={<LocalMultiplayerPage />} />
             <Route path="/multiplayer/online" element={<OnlineMultiplayerPage />} />
+            <Route path="/join-room" element={<JoinRoomPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             {/* Routes with the bottom navigation bar */}

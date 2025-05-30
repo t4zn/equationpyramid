@@ -17,7 +17,7 @@ const LocalMultiplayerPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#232323] to-[#111] flex flex-col items-center justify-center p-4 relative">
-      <BackButton onClick={() => navigate('/multiplayer')} />
+      <BackButton onClick={() => navigate('/home')} />
       
       <Card className="w-full max-w-md bg-[#333] border-2 border-[#444] shadow-2xl">
         <CardHeader className="bg-[#222] text-white p-6">

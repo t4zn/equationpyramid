@@ -548,6 +548,13 @@ const SettingsPage = () => {
               </div>
                <div 
                 className="flex items-center justify-between p-2 bg-[#444] rounded-md cursor-pointer hover:bg-[#555] transition-colors"
+                onClick={() => navigate('/how-to-play')}
+              >
+                <span className="text-white">How to Play</span>
+                 <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+               <div 
+                className="flex items-center justify-between p-2 bg-[#444] rounded-md cursor-pointer hover:bg-[#555] transition-colors"
                  onClick={handleLogout}
               >
                 <span className="text-red-500">Logout</span>
