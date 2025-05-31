@@ -7,59 +7,55 @@ import { RefreshCw, Menu, Clock } from 'lucide-react';
 interface Hexagon {
   id: number;
   letter: string;
-  value: string;  // Changed from string | number to just string
-  status: 'normal' | 'flash-green' | 'flash-red';
+  operator: string; // Separate field for operator
+  number: number; // Separate field for number
+  status: 'normal' | 'selected' | 'flash-green' | 'flash-red'; // Added 'selected' status
 }
 
-// Function to evaluate a combination with BODMAS
+// Function to evaluate a combination with BODMAS based on new rules
 const evaluateCombination = (hex1: Hexagon, hex2: Hexagon, hex3: Hexagon): number | null => {
     try {
-        // Extract number from the first hexagon (ignore leading operator)
-        const number1 = parseFloat(hex1.value.replace(/^[+-/\*]/, ''));
+        // New rule: Ignore the operator of the first hexagon
+        const number1 = hex1.number;
 
-        // Extract operator and number from the second hexagon
-        const operator2Match = hex2.value.match(/^([+-/\*])(.*)$/);
-        if (!operator2Match) return null; // Invalid format
-        const operator2 = operator2Match[1];
-        const number2 = parseFloat(operator2Match[2]);
+        const operator2 = hex2.operator;
+        const number2 = hex2.number;
 
-        // Extract operator and number from the third hexagon
-        const operator3Match = hex3.value.match(/^([+-/\*])(.*)$/);
-        if (!operator3Match) return null; // Invalid format
-        const operator3 = operator3Match[1];
-        const number3 = parseFloat(operator3Match[2]);
+        const operator3 = hex3.operator;
+        const number3 = hex3.number;
 
         // Check for division by zero early
-        if ((operator2 === '÷' && number2 === 0) || (operator3 === '÷' && number3 === 0)) {
-            console.error("Division by zero");
+        if ((operator2 === '/' && number2 === 0) || (operator3 === '/' && number3 === 0)) {
+            console.error("Division by zero attempted.");
             return null;
         }
 
         // Evaluate based on BODMAS for the structure number1 operator2 number2 operator3 number3
         let result;
 
-        // Check for multiplication/division first
-        if (operator2 === '*' || operator2 === '÷') {
+        // Handle multiplication and division first if they appear later in the expression
+        if (operator3 === '*' || operator3 === '/') {
             let intermediateResult;
-            if (operator2 === '*') intermediateResult = number1 * number2;
-            else intermediateResult = number1 / number2;
+            if (operator3 === '*') intermediateResult = number2 * number3;
+            else intermediateResult = number2 / number3;
 
-            // Then apply the third operator
-            if (operator3 === '+') result = intermediateResult + number3;
-            else if (operator3 === '-') result = intermediateResult - number3;
-            else if (operator3 === '*') result = intermediateResult * number3;
-            else if (operator3 === '÷') result = intermediateResult / number3;
-             else return null; // Should not happen with valid operators
+            // Then apply the second operator
+            if (operator2 === '+') result = number1 + intermediateResult;
+            else if (operator2 === '-') result = number1 - intermediateResult;
+            else if (operator2 === '*' || operator2 === '/') { // Handle cases like num1 + (num2 * num3)
+                 if (operator2 === '*') result = number1 * intermediateResult;
+                 else result = number1 / intermediateResult;
+            } else return null; // Should not happen with valid operators
 
-        } else if (operator3 === '*' || operator3 === '÷') {
-             // operator2 is + or -
+        } else if (operator2 === '*' || operator2 === '/') {
+             // operator3 is + or -
              let intermediateResult;
-             if (operator3 === '*') intermediateResult = number2 * number3;
+             if (operator2 === '*') intermediateResult = number2 * number3;
              else intermediateResult = number2 / number3;
 
-             // Then apply the second operator (which has lower precedence)
-             if (operator2 === '+') result = number1 + intermediateResult;
-             else if (operator2 === '-') result = number1 - intermediateResult;
+             // Then apply the first operator
+             if (operator3 === '+') result = number1 + intermediateResult;
+             else if (operator3 === '-') result = number1 - intermediateResult;
              else return null; // Should not happen with valid operators
 
         } else {
@@ -91,39 +87,26 @@ const generateRandomTarget = (): number => {
 // Function to generate random hexagons and a solvable target
 const generateSolvablePuzzle = (): { hexagons: Hexagon[], target: number } => {
   const letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-  // Define possible operator-number pairs with numbers up to 20
-  const numbers = Array.from({ length: 20 }, (_, i) => i + 1);
+  // Define possible numbers and operators with only positive numbers
+  const numbers = Array.from({ length: 10 }, (_, i) => i + 1); // Range from 1 to 10
   const operators = ['+', '-', '*', '/'];
   
-  const operatorNumberPairs = [];
-  for (const op of operators) {
-      for (const num of numbers) {
-          // Add positive number pairs
-          operatorNumberPairs.push(`${op}${num}`);
-          // Add negative number pairs, avoiding -0 and division by zero
-           if (num !== 0 && !(op === '/' && num === 0)) {
-              operatorNumberPairs.push(`${op}-${num}`);
-           }
-      }
-  }
-    // Add pairs with 0, avoiding division by zero
-    for (const op of ['+', '-', '*']) {
-        operatorNumberPairs.push(`${op}0`);
-    }
-
   let hexagons: Hexagon[];
   let target: number;
   let attempts = 0;
-  const maxAttempts = 500; // Increased attempts for more complex combinations
+  const maxAttempts = 1000;
   let validCombinations: { combo: Hexagon[], result: number }[] = [];
 
   do {
-      // Generate hexagons with random operator-number pairs
+      // Generate hexagons with random operator and number pairs
       hexagons = letters.map((letter, index) => {
+          const randomOperator = operators[Math.floor(Math.random() * operators.length)];
+          const randomNumber = numbers[Math.floor(Math.random() * numbers.length)];
           return {
               id: index,
               letter: letter,
-              value: operatorNumberPairs[Math.floor(Math.random() * operatorNumberPairs.length)],
+              operator: randomOperator,
+              number: randomNumber,
               status: 'normal',
           };
       });
@@ -141,23 +124,11 @@ const generateSolvablePuzzle = (): { hexagons: Hexagon[], target: number } => {
                   const result = evaluateCombination(combo[0], combo[1], combo[2]);
 
                   if (result !== null && Number.isInteger(result)) {
-                       // Check if this target already exists
-                       const existingTargetIndex = validCombinations.findIndex(vc => vc.result === result);
-                       if(existingTargetIndex === -1) {
-                           validCombinations.push({ combo, result });
-                       } else {
-                           // If target exists, add this combo if it's different
-                           const existingCombo = validCombinations[existingTargetIndex].combo;
-                           const comboIds = combo.map(hex => hex.id).sort().join(',');
-                           const existingComboIds = existingCombo.map(hex => hex.id).sort().join(',');
-                           if (comboIds !== existingComboIds) {
-                               // We found a different combination for an existing target
-                               // For simplicity, we'll just count this as a valid combination towards the count
-                               // In a real game, you might want to store all combinations for a target
-                               if (!validCombinations.some(vc => vc.combo.map(h => h.id).sort().join(',') === comboIds)) {
-                                    validCombinations.push({ combo, result }); // Add as a new valid combo entry
-                               }
-                           }
+                       // Store the combination and result
+                       const comboIds = combo.map(hex => hex.id).sort().join(',');
+                       // Check if this exact combination (regardless of order) has already been added
+                       if (!validCombinations.some(vc => vc.combo.map(h => h.id).sort().join(',') === comboIds)) {
+                            validCombinations.push({ combo, result });
                        }
                   }
               }
@@ -165,44 +136,30 @@ const generateSolvablePuzzle = (): { hexagons: Hexagon[], target: number } => {
       }
       
       attempts++;
-  } while (validCombinations.length < 2 && attempts < maxAttempts); // Ensure at least 2 solvable combinations
+  } while (validCombinations.length < 5 && attempts < maxAttempts); // Ensure at least 5 solvable combinations
 
   if (validCombinations.length > 0) {
-      // Filter combinations into positive and negative results
-      const positiveCombinations = validCombinations.filter(vc => vc.result >= 0);
-      const negativeCombinations = validCombinations.filter(vc => vc.result < 0);
-
-      // Select target based on 7:3 positive to negative ratio
-      const usePositiveTarget = Math.random() < 0.7; // 70% chance for positive
-
-      if (usePositiveTarget && positiveCombinations.length > 0) {
-          target = positiveCombinations[Math.floor(Math.random() * positiveCombinations.length)].result;
-      } else if (negativeCombinations.length > 0) {
-          target = negativeCombinations[Math.floor(Math.random() * negativeCombinations.length)].result;
-      } else if (positiveCombinations.length > 0) {
-           // Fallback if desired polarity is not available but the other is
-           target = positiveCombinations[Math.floor(Math.random() * positiveCombinations.length)].result;
-      } else {
-          // Fallback if no solvable puzzles found (should be rare with increased attempts)
-          console.warn("Could not find any solvable combinations with the desired polarity. Using fallback random target.");
-          target = generateRandomTarget(); // Use the old random target function as a fallback
-           // Note: In this rare case, the generated hexagons might not match the target if generateRandomTarget is used.
-           // We might need a more robust fallback or error handling.
-      }
+      // Select a random target from the results of valid combinations
+      const randomCombination = validCombinations[Math.floor(Math.random() * validCombinations.length)];
+      target = randomCombination.result;
 
   } else {
       // Fallback if no solvable puzzle is found within attempts
-      console.warn("Could not generate a solvable puzzle with at least 2 combinations after", maxAttempts, "attempts. Generating a random target.");
-      target = generateRandomTarget(); // Use the old random target function as a fallback
-       hexagons = letters.map((letter, index) => { // Also regenerate hexagons as simple numbers in fallback
-          const numbers = Array.from({ length: 10 }, (_, i) => i + 1);
+      console.warn("Could not generate a solvable puzzle with at least 5 combinations after", maxAttempts, "attempts. Generating a random target.");
+      // Generate hexagons with random operator-number pairs (fallback with numbers up to 10 and simple operators)
+       hexagons = letters.map((letter, index) => {
+          const fallbackNumbers = Array.from({ length: 10 }, (_, i) => i + 1);
+           const fallbackOperators = ['+', '-', '*', '/'];
            return {
               id: index,
               letter: letter,
-              value: numbers[Math.floor(Math.random() * numbers.length)].toString(), // Ensure value is string
+              operator: fallbackOperators[Math.floor(Math.random() * fallbackOperators.length)],
+              number: fallbackNumbers[Math.floor(Math.random() * fallbackNumbers.length)],
               status: 'normal',
           };
        });
+       // Generate a random target number as a fallback
+      target = generateRandomTarget();
   }
 
    // Log solvable combinations and target for debugging
@@ -210,35 +167,37 @@ const generateSolvablePuzzle = (): { hexagons: Hexagon[], target: number } => {
    console.log("Hexagons:", hexagons);
    console.log("Target:", target);
    console.log("Valid Combinations found:", validCombinations.length);
-   // Optional: Log the valid combinations themselves (can be verbose)
-   // console.log("Valid Combinations:", validCombinations);
 
-  return { hexagons, target: target !== undefined ? target : generateRandomTarget() };
+  return { hexagons, target };
 };
 
 const GamePage = () => {
   const navigate = useNavigate();
-  const [selectedHexagons, setSelectedHexagons] = useState<string[]>([]);
-  const [correctCombination, setCorrectCombination] = useState('');
+  const [selectedHexagonIds, setSelectedHexagonIds] = useState<number[]>([]); // Track selected hexagon IDs
+  const [correctCombination, setCorrectCombination] = useState(''); // Still used for displaying the found combination
   const [hexagons, setHexagons] = useState<Hexagon[]>([]);
   const [timeLeft, setTimeLeft] = useState(120);
   const [isActive, setIsActive] = useState(true);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [targetNumber, setTargetNumber] = useState<number>(0); // Initialize with 0, set in useEffect
-  const [gameStatus, setGameStatus] = useState<'playing' | 'gameOver' | 'roundOver'>('playing'); // Add game status
-  const [submissionStatus, setSubmissionStatus] = useState<'initial' | 'correct' | 'incorrect'>('initial'); // To manage color flash
+  const [targetNumber, setTargetNumber] = useState<number>(0);
+  const [gameStatus, setGameStatus] = useState<'playing' | 'gameOver' | 'roundOver'>('playing');
+  const [submissionStatus, setSubmissionStatus] = useState<'initial' | 'correct' | 'incorrect'>('initial');
+  const [score, setScore] = useState(0); // New state for score
+  const [usedCombinations, setUsedCombinations] = useState<Set<string>>(new Set()); // Track used combinations by sorted Hexagon IDs
 
   // Initialize puzzle on component mount and refresh
   const initializePuzzle = () => {
     const { hexagons: newHexagons, target: newTarget } = generateSolvablePuzzle();
-    setHexagons(newHexagons);
+    setHexagons(newHexagons.map(hex => ({ ...hex, status: 'normal' }))); // Ensure hexagons are normal initially
     setTargetNumber(newTarget);
-    setSelectedHexagons([]);
+    setSelectedHexagonIds([]);
     setCorrectCombination('');
     setSubmissionStatus('initial');
     setTimeLeft(120); // Reset timer on new puzzle
     setIsActive(true);
+    setScore(0); // Reset score on new puzzle
+    setUsedCombinations(new Set()); // Reset used combinations
   };
 
   useEffect(() => {
@@ -275,263 +234,281 @@ const GamePage = () => {
   };
 
   const handleHexagonClick = (hexagon: Hexagon) => {
-    // Prevent selection if already flashing or game is over
-    if (submissionStatus !== 'initial' || gameStatus !== 'playing') return;
-
-    // Limit selection to 3 hexagons
-    if (selectedHexagons.length < 3 && !selectedHexagons.includes(hexagon.id.toString())) {
-      setSelectedHexagons([...selectedHexagons, hexagon.id.toString()]);
-    } else if (selectedHexagons.includes(hexagon.id.toString())) {
-      setSelectedHexagons(selectedHexagons.filter(id => id !== hexagon.id.toString()));
-    }
+    setSelectedHexagonIds(prevSelected => {
+      const isSelected = prevSelected.includes(hexagon.id);
+      let newSelected;
+      if (isSelected) {
+        // Deselect if already selected
+        newSelected = prevSelected.filter(id => id !== hexagon.id);
+      } else {
+        // Select if less than 3 are already selected
+        if (prevSelected.length < 3) {
+          newSelected = [...prevSelected, hexagon.id];
+        } else {
+          // If 3 are already selected, deselect the first one and add the new one
+          newSelected = [...prevSelected.slice(1), hexagon.id];
+        }
+      }
+      // Update hexagon statuses based on selection
+      setHexagons(hexagons.map(hex => ({
+        ...hex,
+        status: newSelected.includes(hex.id) ? 'selected' : 'normal',
+      })));
+      return newSelected;
+    });
   };
 
   const handleSubmit = () => {
-    if (selectedHexagons.length === 3 && gameStatus === 'playing') {
-        // Get the data for the selected hexagons based on their string IDs
-        const selectedHexData = selectedHexagons
-            .map(id => hexagons.find(hex => hex.id.toString() === id))
-            .filter((hex): hex is Hexagon => hex !== undefined);
-        
-        // Ensure we have exactly 3 valid hexagons
-        if (selectedHexData.length !== 3) {
-            console.error("Could not retrieve data for all selected hexagons.");
-            setSubmissionStatus('incorrect'); // Indicate an error state visually
-            // Briefly flash red to indicate error
-            setHexagons(hexagons.map(hex => 
-                selectedHexagons.includes(hex.id.toString()) ? { ...hex, status: 'flash-red' } : hex
-            ));
-            setTimeout(() => {
-                setHexagons(hexagons.map(hex => 
-                    selectedHexagons.includes(hex.id.toString()) ? { ...hex, status: 'normal' } : hex
-                ));
-                 setSelectedHexagons([]);
-                 setSubmissionStatus('initial');
-            }, 1500); // Reset after 1.5 seconds
-            return;
-        }
+    if (selectedHexagonIds.length !== 3) {
+      console.warn("Please select exactly 3 hexagons.");
+      return; // Do nothing if not exactly 3 hexagons are selected
+    }
 
-        // The order of selection matters for evaluation (number1 operator2 number2 operator3 number3)
-        const [hex1, hex2, hex3] = selectedHexData;
+    const selectedHexagons = selectedHexagonIds.map(id => hexagons.find(hex => hex.id === id)!);
+    const sortedSelectedIds = selectedHexagonIds.sort().join(',');
 
-        const calculatedResult = evaluateCombination(hex1, hex2, hex3);
+    if (usedCombinations.has(sortedSelectedIds)) {
+        console.log("Combination already used.");
+        setScore(prevScore => prevScore - 5);
+        setSubmissionStatus('incorrect'); // Flash red for incorrect
+         setTimeout(() => setSubmissionStatus('initial'), 1500); // Reset flash after 1.5 seconds
+         setSelectedHexagonIds([]); // Deselect hexagons after submission
+         setHexagons(hexagons.map(hex => ({ ...hex, status: 'normal' }))); // Reset hexagon status
+        return;
+    }
 
-        const isCorrect = calculatedResult !== null && calculatedResult === targetNumber;
+    // Evaluate the combination
+    const result = evaluateCombination(selectedHexagons[0], selectedHexagons[1], selectedHexagons[2]);
 
-        if (isCorrect) {
-            // Display combination using the values (e.g., -4 x 2 + 2)
-            // Format the combination string
-            const combinationString = `${parseFloat(hex1.value.replace(/^[+-/\*]/, ''))} ${hex2.value.match(/^([+-/\*])/)?.[1].replace('*', 'x').replace('/', '÷')} ${parseFloat(hex2.value.replace(/^[+-/\*]/, ''))} ${hex3.value.match(/^([+-/\*])/)?.[1].replace('*', 'x').replace('/', '÷')} ${parseFloat(hex3.value.replace(/^[+-/\*]/, ''))} = ${targetNumber}`;
-            setCorrectCombination(combinationString);
-
-            // Update hexagons status to correct and then flash green
-            setSubmissionStatus('correct');
-            setHexagons(hexagons.map(hex => 
-                selectedHexagons.includes(hex.id.toString()) ? { ...hex, status: 'flash-green' } : hex
-            ));
-            // TODO: Handle score update, next round, etc.
-             setTimeout(() => {
-               // After flash, decide next state - maybe remove used hexagons?
-                setHexagons(hexagons.map(hex => 
-                     selectedHexagons.includes(hex.id.toString()) ? { ...hex, status: 'normal' } : hex // Or status: 'used' / remove element
-                 ));
-                setSelectedHexagons([]);
-                setSubmissionStatus('initial');
-                // Optionally initialize a new puzzle here if it's a correct submission for a round
-                // initializePuzzle();
-             }, 1500); // Reset after 1.5 seconds
-
-        } else {
-             // Update hexagons status to incorrect and then flash red
-             setSubmissionStatus('incorrect');
-             setHexagons(hexagons.map(hex => 
-                selectedHexagons.includes(hex.id.toString()) ? { ...hex, status: 'flash-red' } : hex
-            ));
-            // Briefly show incorrect state, then reset
-            setTimeout(() => {
-                setHexagons(hexagons.map(hex => 
-                    selectedHexagons.includes(hex.id.toString()) ? { ...hex, status: 'normal' } : hex
-                ));
-                 setSelectedHexagons([]); // Reset selection after incorrect attempt
-                 setSubmissionStatus('initial');
-            }, 1500); // Reset after 1.5 seconds
-        }
+    if (result !== null && result === targetNumber) {
+      console.log("Correct combination!");
+      setScore(prevScore => prevScore + 10);
+      setUsedCombinations(prevUsed => new Set(prevUsed).add(sortedSelectedIds)); // Mark combination as used
+      setSubmissionStatus('correct'); // Flash green for correct
+      // Keep hexagons green for a moment, then reset to normal
+      setHexagons(hexagons.map(hex => ({
+        ...hex,
+        status: selectedHexagonIds.includes(hex.id) ? 'flash-green' : 'normal',
+      })));
+      setTimeout(() => {
+        setSubmissionStatus('initial');
+        setHexagons(hexagons.map(hex => ({
+          ...hex,
+          status: 'normal',
+        })));
+      }, 1500); // Reset flash after 1.5 seconds
+       // Optionally update correctCombination display
+       setCorrectCombination(`${selectedHexagons[0].number} ${selectedHexagons[1].operator}${selectedHexagons[1].number} ${selectedHexagons[2].operator}${selectedHexagons[2].number} = ${targetNumber}`);
 
     } else {
-        console.log('Please select exactly 3 hexagons.'); // Provide user feedback (can be a toast or modal)
-         // Briefly flash red if less than 3 are selected on submit? Or just rely on disabled button.
+      console.log("Incorrect combination.");
+      setScore(prevScore => prevScore - 5);
+      setSubmissionStatus('incorrect'); // Flash red for incorrect
+      // Keep hexagons red for a moment, then reset to normal
+       setHexagons(hexagons.map(hex => ({
+        ...hex,
+        status: selectedHexagonIds.includes(hex.id) ? 'flash-red' : 'normal',
+      })));
+      setTimeout(() => {
+        setSubmissionStatus('initial');
+         setHexagons(hexagons.map(hex => ({
+          ...hex,
+          status: 'normal',
+        })));
+      }, 1500); // Reset flash after 1.5 seconds
     }
+
+    setSelectedHexagonIds([]); // Deselect hexagons after submission
   };
 
   const handleRefresh = () => {
-    setIsActive(false); // Pause timer
-    initializePuzzle(); // Generate new puzzle
-    // setIsActive(true); // Timer restarted in initializePuzzle
+    initializePuzzle(); // Generate a new puzzle
   };
 
   const handleMenu = () => {
-    setShowMenu(true); // Show menu modal
     setIsActive(false); // Pause timer when menu is open
+    setShowMenu(true);
   };
 
   const closeMenu = () => {
-    setShowMenu(false); // Hide menu modal
-    if (gameStatus === 'playing') {
-       setIsActive(true); // Resume timer only if game is playing
-    }
+    setIsActive(true); // Resume timer when menu is closed
+    setShowMenu(false);
   };
 
   const handleRestart = () => {
-      console.log('Restart game');
-      closeMenu();
-      initializePuzzle(); // Start a new puzzle
-      setGameStatus('playing'); // Reset game status
+    closeMenu(); // Close menu
+    initializePuzzle(); // Start a new game
   };
 
   const handleQuit = () => {
-      console.log('Quit game');
-      closeMenu();
-      navigate('/home'); // Example: navigate back to home page
+    navigate('/'); // Navigate to home page
   };
 
-  // Dynamic class for combination display bubble
-  const combinationBubbleClass = correctCombination 
-    ? 'bg-nav-active text-black px-3 py-1 rounded-full font-bold' 
-    : 'text-xl font-bold';
+   // Effect to handle game over when timer reaches 0
+    useEffect(() => {
+        if (timeLeft === 0 && gameStatus === 'playing') {
+            setIsActive(false); // Pause timer
+            setGameStatus('gameOver');
+            console.log("Game Over!");
+            // Implement game over actions (e.g., show a game over screen, record score)
+        }
+    }, [timeLeft, gameStatus]);
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] flex flex-col items-center p-4 text-white font-inter overflow-y-auto pb-20"> {/* Added pb-20 for button spacing */}
-      {/* Header */}
-      <div className="w-full max-w-sm flex justify-between items-center mb-8 font-inter">
-        <div className="text-center">
-          <div className="text-lg">Combinations</div>
-          {/* Display correct combination only after successful submit in a bubble */}
-          <div className={combinationBubbleClass}>{correctCombination || '-'}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-lg">Target</div>
-          <div className="text-4xl font-bold text-nav-active">{targetNumber}</div> {/* Display random target */}
-        </div>
-        <div className="text-center flex items-center">
-          {/* Time Icon */}
-           <Clock size={24} className="mr-1 text-white" /> {/* Clock icon */}
-          <div className="text-xl font-bold">{formatTime(timeLeft)}</div> {/* Display formatted time */}
-        </div>
-      </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white font-inter p-1">
+      {/* Game UI */}
+      {!showMenu && gameStatus === 'playing' && (
+        <div className="w-full max-w-[360px] px-1">
+          {/* Top bar */}
+          <div className="flex justify-between items-center mb-1">
+            <div className="text-sm font-inter">Combinations: {usedCombinations.size}</div>
+            <div className="text-lg text-orange-500 font-inter">Target: {targetNumber}</div>
+            <div className="text-sm flex items-center font-inter">
+              <Clock className="mr-1 text-white" size={16} />
+              {formatTime(timeLeft)}
+            </div>
+          </div>
 
-      {/* Game Area (Hexagonal Pyramid) */}
-      <div className="flex flex-col items-center justify-center flex-grow py-8">
-        {/* Apply the 'hexagon' class here */}
-        {/* Row 1 */}
-        <div className="flex justify-center">
-          {hexagons.slice(0, 1).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id.toString()) ? 'border-4 border-nav-active' : hex.status === 'flash-green' ? 'border-4 border-green-500' : hex.status === 'flash-red' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-              <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">
-                {/* Display * as x and / as ÷ */}
-                {hex.value.startsWith('*') ? '<span className="text-xl">x</span>' : hex.value.startsWith('/') ? '<span className="text-xl">÷</span>' : hex.value}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Row 2 */}
-        <div className="flex justify-center -mt-4"> {/* Adjust margin to overlap for pyramid effect */}
-          {hexagons.slice(1, 3).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id.toString()) ? 'border-4 border-nav-active' : hex.status === 'flash-green' ? 'border-4 border-green-500' : hex.status === 'flash-red' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-               <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">
-                 {/* Display * as x and / as ÷ */}
-                {hex.value.startsWith('*') ? '<span className="text-xl">x</span>' : hex.value.startsWith('/') ? '<span className="text-xl">÷</span>' : hex.value}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Row 3 */}
-        <div className="flex justify-center -mt-4"> {/* Adjust margin */}
-          {hexagons.slice(3, 6).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id.toString()) ? 'border-4 border-nav-active' : hex.status === 'flash-green' ? 'border-4 border-green-500' : hex.status === 'flash-red' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-               <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">
-                 {/* Display * as x and / as ÷ */}
-                {hex.value.startsWith('*') ? '<span className="text-xl">x</span>' : hex.value.startsWith('/') ? '<span className="text-xl">÷</span>' : hex.value}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Row 4 */}
-        <div className="flex justify-center -mt-4"> {/* Adjust margin */}
-          {hexagons.slice(6, 10).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id.toString()) ? 'border-4 border-nav-active' : hex.status === 'flash-green' ? 'border-4 border-green-500' : hex.status === 'flash-red' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-               <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">
-                 {/* Display * as x and / as ÷ */}
-                {hex.value.startsWith('*') ? '<span className="text-xl">x</span>' : hex.value.startsWith('/') ? '<span className="text-xl">÷</span>' : hex.value}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="w-full max-w-md flex justify-between items-center pt-4 pb-4"> {/* Adjusted padding */}
-        <div onClick={handleMenu} className="cursor-pointer text-white">
-           <Menu size={32} />
-        </div>
-        <Button
-          className="px-8 py-3 rounded-full bg-white text-black text-lg font-semibold"
-          onClick={handleSubmit}
-          disabled={selectedHexagons.length !== 3 || submissionStatus !== 'initial'}
-        >
-          Submit
-        </Button>
-        <div onClick={handleRefresh} className="cursor-pointer text-white">
-           <RefreshCw size={32} />
-        </div>
-      </div>
-
-      {showMenu && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-              <div className="bg-[#232323] p-6 rounded-lg shadow-lg text-white">
-                  <h2 className="text-xl font-bold mb-4">Game Menu</h2>
-                  <div className="space-y-4">
-                      <Button className="w-full bg-white text-black" onClick={handleRestart}>Restart</Button>
-                      <Button className="w-full bg-white text-black" onClick={closeMenu}>Resume</Button>
-                      <Button className="w-full bg-white text-black" onClick={handleQuit}>Quit</Button>
+          {/* Hexagon Pyramid Layout */}
+          <div className="flex flex-col items-center mb-1">
+            {/* Row 1 */}
+            <div className="flex justify-center">
+              {hexagons.find(hex => hex.letter === 'A') && (
+                <div
+                  key={hexagons.find(hex => hex.letter === 'A')!.id}
+                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  style={{
+                    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+                  }}
+                  onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === 'A')!)}
+                >
+                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>A</div>
+                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                    {hexagons.find(hex => hex.letter === 'A')!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === 'A')!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === 'A')!.operator}{hexagons.find(hex => hex.letter === 'A')!.number}
                   </div>
+                </div>
+              )}
+            </div>
+            {/* Row 2 */}
+            <div className="flex justify-center -mt-2">
+              {['B', 'C'].map(letter => hexagons.find(hex => hex.letter === letter) && (
+                <div
+                  key={hexagons.find(hex => hex.letter === letter)!.id}
+                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  style={{
+                    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+                  }}
+                  onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
+                >
+                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                    {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Row 3 */}
+            <div className="flex justify-center -mt-2">
+              {['D', 'E', 'F'].map(letter => hexagons.find(hex => hex.letter === letter) && (
+                <div
+                  key={hexagons.find(hex => hex.letter === letter)!.id}
+                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  style={{
+                    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+                  }}
+                  onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
+                >
+                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                    {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Row 4 */}
+            <div className="flex justify-center -mt-2">
+              {['G', 'H', 'I', 'J'].map(letter => hexagons.find(hex => hex.letter === letter) && (
+                <div
+                  key={hexagons.find(hex => hex.letter === letter)!.id}
+                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  style={{
+                    clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+                  }}
+                  onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
+                >
+                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                    {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom bar with Submit and Refresh */}
+          <div className="flex justify-between items-center mt-2">
+            <Button
+              onClick={handleSubmit}
+              className="px-4 py-1 text-sm bg-white text-black rounded-full shadow-lg hover:bg-gray-200"
+              disabled={selectedHexagonIds.length !== 3}
+            >
+              Submit
+            </Button>
+            <div className="text-sm flex items-center cursor-pointer text-white" onClick={handleRefresh}>
+              <RefreshCw className="mr-1" size={18} />
+            </div>
+          </div>
+
+          {/* Display score */}
+          <div className="text-sm text-center mt-1 font-inter">Score: {score}</div>
+
+          {/* Display correct combination when found */}
+          {correctCombination && (
+            <div className="text-center mt-0.5 text-green-400 font-inter text-xs">Last Correct: {correctCombination}</div>
+          )}
+
+          {/* Menu Button */}
+          <div className="absolute top-1 right-1">
+            <Button onClick={handleMenu} className="p-1 bg-gray-700 rounded-md">
+              <Menu size={18} />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Game Over Screen */}
+      {gameStatus === 'gameOver' && (
+          <div className="text-center text-2xl font-bold text-white font-inter"> {/* Apply Inter font */}
+              Game Over! Final Score: {score}
+              {/* Add options to Restart or Quit from here */}
+              <div className="mt-4 flex justify-center space-x-4 font-inter"> {/* Apply Inter font */}
+                   <Button onClick={handleRestart} className="px-8 py-3 text-lg bg-white text-black rounded-full shadow-lg hover:bg-gray-200">Restart</Button>
+                   <Button onClick={handleQuit} className="px-8 py-3 text-lg bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600">Quit</Button>
               </div>
           </div>
       )}
 
-       {/* Game Over Modal (Placeholder) */}
-       {gameStatus === 'gameOver' && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-              <div className="bg-[#232323] p-6 rounded-lg shadow-lg text-white text-center">
-                  <h2 className="text-2xl font-bold mb-4">Game Over!</h2>
-                  {/* TODO: Display score or other game over information */}
-                  <Button className="w-full bg-white text-black mt-4" onClick={handleRestart}>Play Again</Button>
-                  <Button className="w-full bg-white text-black mt-2" onClick={handleQuit}>Back to Home</Button>
-              </div>
+      {/* Menu Overlay */}
+      {showMenu && (
+        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center"> {/* Ensure menu overlay background is black */}
+          <div className="bg-gray-800 p-8 rounded-lg shadow-lg font-inter"> {/* Apply Inter font */}
+            <h2 className="text-2xl font-bold mb-4">Menu</h2>
+            <ul className="space-y-4">
+              <li>
+                <Button onClick={closeMenu} className="w-full px-4 py-2 text-lg bg-gray-700 rounded-md hover:bg-gray-600">Resume</Button>
+              </li>
+              <li>
+                <Button onClick={handleRestart} className="w-full px-4 py-2 text-lg bg-gray-700 rounded-md hover:bg-gray-600">Restart</Button>
+              </li>
+              <li>
+                <Button onClick={handleQuit} className="w-full px-4 py-2 text-lg bg-red-500 rounded-md hover:bg-red-600">Quit</Button>
+              </li>
+              {/* Add Multiplayer options here later */}
+            </ul>
           </div>
-       )}
+        </div>
+      )}
+
     </div>
   );
 };
