@@ -341,7 +341,7 @@ const GamePage = () => {
   };
 
   const handleQuit = () => {
-    navigate('/'); // Navigate to home page
+    navigate('/home'); // Navigate to home page instead of login page
   };
 
    // Effect to handle game over when timer reaches 0
@@ -355,89 +355,107 @@ const GamePage = () => {
     }, [timeLeft, gameStatus]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white font-inter p-1">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white font-inter">
       {/* Game UI */}
       {!showMenu && gameStatus === 'playing' && (
-        <div className="w-full max-w-[360px] px-1">
-          {/* Top bar */}
-          <div className="flex justify-between items-center mb-1">
-            <div className="text-sm font-inter">Combinations: {usedCombinations.size}</div>
-            <div className="text-lg text-orange-500 font-inter">Target: {targetNumber}</div>
-            <div className="text-sm flex items-center font-inter">
-              <Clock className="mr-1 text-white" size={16} />
-              {formatTime(timeLeft)}
-            </div>
+        <div className="w-full h-full flex flex-col justify-between px-4 py-2 fixed inset-0">
+          {/* Menu Button - transparent background */}
+          <div className="absolute top-4 left-4 z-10">
+            <button onClick={handleMenu} className="p-2 bg-transparent hover:text-gray-300 transition-all duration-200">
+              <Menu size={24} />
+            </button>
           </div>
 
-          {/* Hexagon Pyramid Layout */}
-          <div className="flex flex-col items-center mb-1">
+          {/* Top section - moved down to avoid overlap */}
+          <div className="pt-12">
+            {/* Top bar */}
+            <div className="flex justify-between items-start">
+              <div className="text-base font-medium text-center w-20">Score
+                <div className="text-xl text-amber-400 font-bold">{score}</div>
+              </div>
+              <div className="text-base font-medium text-center w-20">Target
+                <div className="text-2xl text-amber-400 font-bold">{targetNumber}</div>
+              </div>
+              <div className="text-base font-medium text-right w-20">Time
+                <div className="text-xl font-bold flex items-center justify-end">
+                  <Clock className="mr-1" size={16} />
+                  {formatTime(timeLeft)}
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-sm mt-2">Combinations: {usedCombinations.size}</div>
+          </div>
+
+          {/* Hexagon Pyramid Layout - Middle section with flex-grow to take available space */}
+          <div className="flex flex-col items-center justify-center flex-grow my-2">
             {/* Row 1 */}
             <div className="flex justify-center">
               {hexagons.find(hex => hex.letter === 'A') && (
                 <div
                   key={hexagons.find(hex => hex.letter === 'A')!.id}
-                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === 'A')!)}
                 >
-                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>A</div>
-                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>A</div>
+                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
                     {hexagons.find(hex => hex.letter === 'A')!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === 'A')!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === 'A')!.operator}{hexagons.find(hex => hex.letter === 'A')!.number}
                   </div>
                 </div>
               )}
             </div>
             {/* Row 2 */}
-            <div className="flex justify-center -mt-2">
+            <div className="flex justify-center -mt-3">
               {['B', 'C'].map(letter => hexagons.find(hex => hex.letter === letter) && (
                 <div
                   key={hexagons.find(hex => hex.letter === letter)!.id}
-                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
                     {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
                   </div>
                 </div>
               ))}
             </div>
             {/* Row 3 */}
-            <div className="flex justify-center -mt-2">
+            <div className="flex justify-center -mt-3">
               {['D', 'E', 'F'].map(letter => hexagons.find(hex => hex.letter === letter) && (
                 <div
                   key={hexagons.find(hex => hex.letter === letter)!.id}
-                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
                     {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
                   </div>
                 </div>
               ))}
             </div>
             {/* Row 4 */}
-            <div className="flex justify-center -mt-2">
+            <div className="flex justify-center -mt-3">
               {['G', 'H', 'I', 'J'].map(letter => hexagons.find(hex => hex.letter === letter) && (
                 <div
                   key={hexagons.find(hex => hex.letter === letter)!.id}
-                  className="hexagon m-0.5 p-2 text-center cursor-pointer bg-white w-14 h-16 relative"
+                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                  <div className={`text-sm font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-base font-bold font-league-spartan ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
+                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
                     {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
                   </div>
                 </div>
@@ -445,66 +463,89 @@ const GamePage = () => {
             </div>
           </div>
 
-          {/* Bottom bar with Submit and Refresh */}
-          <div className="flex justify-between items-center mt-2">
-            <Button
-              onClick={handleSubmit}
-              className="px-4 py-1 text-sm bg-white text-black rounded-full shadow-lg hover:bg-gray-200"
-              disabled={selectedHexagonIds.length !== 3}
-            >
-              Submit
-            </Button>
-            <div className="text-sm flex items-center cursor-pointer text-white" onClick={handleRefresh}>
-              <RefreshCw className="mr-1" size={18} />
+          {/* Bottom controls */}
+          <div className="pb-8 flex flex-col gap-3">
+            {/* Combinations display */}
+            {correctCombination && (
+              <div className="text-center text-green-400 text-sm font-medium bg-green-900/20 py-2 px-4 rounded-lg">
+                Last Correct: {correctCombination}
+              </div>
+            )}
+            
+            {/* Action buttons */}
+            <div className="flex justify-between items-center">
+              <Button
+                onClick={handleSubmit}
+                className={`px-6 py-3 text-base font-medium rounded-full shadow-lg transition-all duration-200 ${selectedHexagonIds.length === 3 ? 'bg-amber-400 text-black hover:bg-amber-500' : 'bg-gray-600 text-gray-300'}`}
+                disabled={selectedHexagonIds.length !== 3}
+              >
+                Submit
+              </Button>
+              
+              <Button 
+                onClick={handleRefresh} 
+                className="p-3 bg-gray-700 hover:bg-gray-600 rounded-full shadow-lg transition-all duration-200"
+              >
+                <RefreshCw size={20} />
+              </Button>
             </div>
           </div>
 
-          {/* Display score */}
-          <div className="text-sm text-center mt-1 font-inter">Score: {score}</div>
-
-          {/* Display correct combination when found */}
-          {correctCombination && (
-            <div className="text-center mt-0.5 text-green-400 font-inter text-xs">Last Correct: {correctCombination}</div>
-          )}
-
-          {/* Menu Button */}
-          <div className="absolute top-1 right-1">
-            <Button onClick={handleMenu} className="p-1 bg-gray-700 rounded-md">
-              <Menu size={18} />
-            </Button>
-          </div>
+          {/* Menu button is now at the top of the component */}
         </div>
       )}
 
       {/* Game Over Screen */}
       {gameStatus === 'gameOver' && (
-          <div className="text-center text-2xl font-bold text-white font-inter"> {/* Apply Inter font */}
-              Game Over! Final Score: {score}
-              {/* Add options to Restart or Quit from here */}
-              <div className="mt-4 flex justify-center space-x-4 font-inter"> {/* Apply Inter font */}
-                   <Button onClick={handleRestart} className="px-8 py-3 text-lg bg-white text-black rounded-full shadow-lg hover:bg-gray-200">Restart</Button>
-                   <Button onClick={handleQuit} className="px-8 py-3 text-lg bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600">Quit</Button>
+          <div className="fixed inset-0 w-full h-full flex flex-col items-center justify-center px-6 py-10"> 
+              <div className="flex flex-col items-center justify-center flex-grow">
+                  <div className="mb-2 text-amber-400 text-xl font-medium">Game Over!</div>
+                  <div className="text-3xl font-bold mb-8">Final Score: {score}</div>
+                  
+                  <div className="flex flex-col gap-4 items-center">
+                      <div className="text-green-400 text-lg mb-2">Combinations Found: {usedCombinations.size}</div>
+                  </div>
+              </div>
+              
+              {/* Game over actions - fixed at bottom */}
+              <div className="w-full max-w-md pb-8">
+                  <div className="flex justify-center gap-4 w-full"> 
+                      <Button onClick={handleRestart} className="w-full px-6 py-4 text-lg font-medium bg-amber-500 text-black rounded-xl shadow-lg hover:bg-amber-400 transition-all duration-200">Play Again</Button>
+                      <Button onClick={handleQuit} className="w-full px-6 py-4 text-lg font-medium bg-gray-700 text-white rounded-xl shadow-lg hover:bg-gray-600 transition-all duration-200">Main Menu</Button>
+                  </div>
               </div>
           </div>
       )}
 
       {/* Menu Overlay */}
       {showMenu && (
-        <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center"> {/* Ensure menu overlay background is black */}
-          <div className="bg-gray-800 p-8 rounded-lg shadow-lg font-inter"> {/* Apply Inter font */}
-            <h2 className="text-2xl font-bold mb-4">Menu</h2>
-            <ul className="space-y-4">
-              <li>
-                <Button onClick={closeMenu} className="w-full px-4 py-2 text-lg bg-gray-700 rounded-md hover:bg-gray-600">Resume</Button>
-              </li>
-              <li>
-                <Button onClick={handleRestart} className="w-full px-4 py-2 text-lg bg-gray-700 rounded-md hover:bg-gray-600">Restart</Button>
-              </li>
-              <li>
-                <Button onClick={handleQuit} className="w-full px-4 py-2 text-lg bg-red-500 rounded-md hover:bg-red-600">Quit</Button>
-              </li>
-              {/* Add Multiplayer options here later */}
-            </ul>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50"> 
+          <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-xs w-full mx-4"> 
+            <h2 className="text-2xl font-bold mb-6 text-amber-400 text-center">Game Menu</h2>
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={closeMenu} 
+                className="w-full px-5 py-3 text-base font-medium bg-amber-500 text-black rounded-xl hover:bg-amber-400 transition-all duration-200"
+              >
+                Resume Game
+              </Button>
+              <Button 
+                onClick={handleRestart} 
+                className="w-full px-5 py-3 text-base font-medium bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all duration-200"
+              >
+                New Game
+              </Button>
+              <Button 
+                onClick={handleQuit} 
+                className="w-full px-5 py-3 text-base font-medium bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all duration-200 mt-2"
+              >
+                Main Menu
+              </Button>
+              
+              <div className="mt-4 pt-4 border-t border-gray-700 text-center text-sm text-gray-400">
+                Current Score: {score}
+              </div>
+            </div>
           </div>
         </div>
       )}

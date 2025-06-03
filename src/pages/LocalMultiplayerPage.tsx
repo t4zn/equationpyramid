@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-// import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Menu, Clock, Users } from 'lucide-react'; // Removed RefreshCw icon
-// import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'; // Remove card components
-// import { BackButton } from '@/components/BackButton'; // Remove BackButton
+import { Menu, Clock, Users } from 'lucide-react';
 
 // Placeholder types - replace with actual game logic types later
 interface HexagonData {
@@ -54,6 +51,7 @@ const LocalMultiplayerPage = () => {
   const [showMenu, setShowMenu] = useState(false); // State for menu modal
   const [targetNumber, setTargetNumber] = useState<number>(generateRandomTarget()); // State for target number
   const [roomCode, setRoomCode] = useState('ABCD'); // Placeholder for room code
+  const [gameStatus, setGameStatus] = useState<'playing' | 'gameOver'>('playing'); // Game status state
 
   // Initialize hexagons and target on component mount
   useEffect(() => {
@@ -170,112 +168,159 @@ const LocalMultiplayerPage = () => {
         <div className="text-center">
           <div className="text-lg">Combinations</div>
           {/* Display correct combination only after successful submit */}
-          <div className="text-xl font-bold">{correctCombination || '-'}</div>
-        </div>
-        <div className="text-center">
-          <div className="text-lg">Target</div>
-          <div className="text-4xl font-bold text-nav-active">{targetNumber}</div> {/* Display random target */}
-        </div>
-        <div className="text-center flex items-center">
-          {/* Time Icon */}
-           <Clock size={24} className="mr-1 text-white" /> {/* Clock icon */}
-          <div className="text-xl font-bold">{formatTime(timeLeft)}</div> {/* Display formatted time */}
-        </div>
-      </div>
 
-      {/* Game Area (Hexagonal Pyramid) */}
-      <div className="flex flex-col items-center justify-center flex-grow py-8">
-        {/* Apply the 'hexagon' class here */}
-        {/* Row 1 */}
-        <div className="flex justify-center">
-          {hexagons.slice(0, 1).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id) ? 'border-4 border-nav-active' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-              <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
+          {/* Top section - moved down to avoid overlap */}
+          <div className="pt-12">
+            {/* Top bar */}
+            <div className="flex justify-between items-start">
+              <div className="text-base font-medium text-center w-20">Score
+                <div className="text-xl text-amber-400 font-bold">0</div>
+              </div>
+              <div className="text-base font-medium text-center w-20">Target
+                <div className="text-2xl text-amber-400 font-bold">{targetNumber}</div>
+              </div>
+              <div className="text-base font-medium text-right w-20">Time
+                <div className="text-xl font-bold flex items-center justify-end">
+                  <Clock className="mr-1" size={16} />
+                  {formatTime(timeLeft)}
+                </div>
+              </div>
             </div>
-          ))}
-        </div>
-        {/* Row 2 */}
-        <div className="flex justify-center -mt-4"> {/* Adjust margin to overlap for pyramid effect */}
-          {hexagons.slice(1, 3).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id) ? 'border-4 border-nav-active' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-               <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
+            
+            <div className="text-sm mt-2 flex justify-between">
+              <div>Room: {roomCode}</div>
+              <div>Combinations: 0</div>
             </div>
-          ))}
-        </div>
-        {/* Row 3 */}
-        <div className="flex justify-center -mt-4"> {/* Adjust margin */}
-          {hexagons.slice(3, 6).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id) ? 'border-4 border-nav-active' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-               <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
-            </div>
-          ))}
-        </div>
-        {/* Row 4 */}
-        <div className="flex justify-center -mt-4"> {/* Adjust margin */}
-          {hexagons.slice(6, 10).map(hex => (
-            <div
-              key={hex.id}
-              className={`hexagon w-20 h-[4.6rem] bg-white flex flex-col items-center justify-center m-1 cursor-pointer
-                         ${selectedHexagons.includes(hex.id) ? 'border-4 border-nav-active' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
-              onClick={() => handleHexagonClick(hex)}
-            >
-               <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
-              <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Footer/Controls */}
-      <div className="w-full max-w-md flex justify-between items-center pt-4 pb-4"> {/* Adjusted padding */}
-        {/* Menu Icon */}
-        <div onClick={handleMenu} className="cursor-pointer text-white">
-           <Menu size={32} />
-        </div>
-        {/* Submit Button */}
-        <Button
-          className="px-8 py-3 rounded-full bg-white text-black text-lg font-semibold"
-          onClick={handleSubmit}
-          disabled={selectedHexagons.length !== 3} // Disable if not 3 selected
-        >
-          Submit
-        </Button>
-        {/* Refresh Icon (Removed for multiplayer) */}
-        {/* <div onClick={handleRefresh} className="cursor-pointer text-white"><RefreshCw size={32} /></div> */}
-      </div>
+          {/* Hexagon Pyramid Layout - Middle section with flex-grow to take available space */}
+          <div className="flex flex-col items-center justify-center flex-grow my-2">
+            {/* Row 1 */}
+            <div className="flex justify-center">
+              {hexagons.slice(0, 1).map(hex => (
+                <div
+                  key={hex.id}
+                  className={`hexagon w-16 h-16 bg-white flex flex-col items-center justify-center m-1 cursor-pointer shadow-md
+                             ${selectedHexagons.includes(hex.id) ? 'border-4 border-amber-500' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
+                  onClick={() => handleHexagonClick(hex)}
+                >
+                  <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
+                  <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
+                </div>
+              ))}
+            </div>
+            {/* Row 2 */}
+            <div className="flex justify-center -mt-2">
+              {hexagons.slice(1, 3).map(hex => (
+                <div
+                  key={hex.id}
+                  className={`hexagon w-16 h-16 bg-white flex flex-col items-center justify-center m-1 cursor-pointer shadow-md
+                             ${selectedHexagons.includes(hex.id) ? 'border-4 border-amber-500' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
+                  onClick={() => handleHexagonClick(hex)}
+                >
+                  <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
+                  <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
+                </div>
+              ))}
+            </div>
+            {/* Row 3 */}
+            <div className="flex justify-center -mt-2">
+              {hexagons.slice(3, 6).map(hex => (
+                <div
+                  key={hex.id}
+                  className={`hexagon w-16 h-16 bg-white flex flex-col items-center justify-center m-1 cursor-pointer shadow-md
+                             ${selectedHexagons.includes(hex.id) ? 'border-4 border-amber-500' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
+                  onClick={() => handleHexagonClick(hex)}
+                >
+                  <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
+                  <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
+                </div>
+              ))}
+            </div>
+            {/* Row 4 */}
+            <div className="flex justify-center -mt-2">
+              {hexagons.slice(6, 10).map(hex => (
+                <div
+                  key={hex.id}
+                  className={`hexagon w-16 h-16 bg-white flex flex-col items-center justify-center m-1 cursor-pointer shadow-md
+                             ${selectedHexagons.includes(hex.id) ? 'border-4 border-amber-500' : hex.status === 'correct' ? 'border-4 border-green-500' : hex.status === 'incorrect' ? 'border-4 border-red-500' : 'border-2 border-gray-300'}`}
+                  onClick={() => handleHexagonClick(hex)}
+                >
+                  <div className="text-xs text-black font-bold font-league-spartan">{hex.letter}</div>
+                  <div className="text-lg text-black font-bold font-league-spartan">{hex.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {/* Menu Modal (Placeholder) */}
-      {showMenu && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-              <div className="bg-[#232323] p-6 rounded-lg shadow-lg text-white">
-                  <h2 className="text-xl font-bold mb-4">Game Menu</h2>
-                   {/* Room Code for Multiplayer (Placeholder) */}
-                   <p className="text-gray-400 mb-4">Room Code: {roomCode}</p>
-                  <div className="space-y-4">
-                      <Button className="w-full bg-white text-black" onClick={handleRestart}>Restart</Button>
-                      <Button className="w-full bg-white text-black" onClick={closeMenu}>Resume</Button>
-                      <Button className="w-full bg-white text-black" onClick={handleQuit}>Quit</Button>
+          {/* Bottom controls */}
+          <div className="pb-8 flex flex-col gap-3">
+            {/* Combinations display */}
+            {correctCombination && (
+              <div className="text-center text-green-400 text-sm font-medium bg-green-900/20 py-2 px-4 rounded-lg">
+                Last Correct: {correctCombination}
+              </div>
+            )}
+            
+            {/* Submit button */}
+            <div className="flex justify-center">
+              <Button
+                onClick={handleSubmit}
+                className={`px-8 py-3 text-lg font-medium rounded-xl shadow-lg transition-all duration-200 ${selectedHexagons.length === 3 ? 'bg-amber-500 text-black hover:bg-amber-400' : 'bg-gray-700 text-gray-300'}`}
+                disabled={selectedHexagons.length !== 3}
+              >
+                Submit
+              </Button>
+            </div>
+          </div>
+
+          {/* Menu button is now at the top of the component */}
+        </div>
+      )}
+
+      {/* Game Over Screen */}
+      {gameStatus === 'gameOver' && (
+          <div className="fixed inset-0 w-full h-full flex flex-col items-center justify-center px-6 py-10"> 
+              <div className="flex flex-col items-center justify-center flex-grow">
+                  <div className="mb-2 text-amber-400 text-xl font-medium">Game Over!</div>
+                  <div className="text-3xl font-bold mb-8">Final Score: 0</div>
+                  
+                  <div className="flex flex-col gap-4 items-center">
+                      <div className="text-green-400 text-lg mb-2">Combinations Found: 0</div>
+                  </div>
+              </div>
+              
+              {/* Game over actions - fixed at bottom */}
+              <div className="w-full max-w-md pb-8">
+                  <div className="flex justify-center gap-4 w-full"> 
+                      <Button onClick={handleRestart} className="w-full px-6 py-4 text-lg font-medium bg-amber-500 text-black rounded-xl shadow-lg hover:bg-amber-400 transition-all duration-200">Play Again</Button>
+                      <Button onClick={handleQuit} className="w-full px-6 py-4 text-lg font-medium bg-gray-700 text-white rounded-xl shadow-lg hover:bg-gray-600 transition-all duration-200">Main Menu</Button>
                   </div>
               </div>
           </div>
+      )}
+
+      {/* Menu Overlay */}
+      {showMenu && (
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/70 flex items-center justify-center z-10">
+          <div className="bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-sm mx-4">
+            <h2 className="text-2xl font-bold mb-2 text-white">Menu</h2>
+            <p className="text-gray-400 mb-4">Room Code: {roomCode}</p>
+            <div className="text-amber-400 text-lg mb-4">Current Score: 0</div>
+            
+            <div className="space-y-3">
+              <Button onClick={closeMenu} className="w-full px-4 py-3 text-lg bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-all duration-200">
+                Resume
+              </Button>
+              <Button onClick={handleRestart} className="w-full px-4 py-3 text-lg bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-all duration-200">
+                Restart
+              </Button>
+              <Button onClick={handleQuit} className="w-full px-4 py-3 text-lg bg-amber-500 hover:bg-amber-400 text-black rounded-xl transition-all duration-200">
+                Quit
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
