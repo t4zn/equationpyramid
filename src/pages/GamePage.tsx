@@ -399,8 +399,8 @@ const GamePage = () => {
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === 'A')!)}
                 >
-                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>A</div>
-                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>A</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
                     <span className="text-2xl mr-0.5">
                       {hexagons.find(hex => hex.letter === 'A')!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === 'A')!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === 'A')!.operator}
                     </span>
@@ -420,8 +420,8 @@ const GamePage = () => {
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
                      <span className="text-2xl mr-0.5">
                       {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}
                     </span>
@@ -441,8 +441,8 @@ const GamePage = () => {
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
                      <span className="text-2xl mr-0.5">
                       {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}
                     </span>
@@ -462,8 +462,8 @@ const GamePage = () => {
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-400' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
                      <span className="text-2xl mr-0.5">
                       {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}
                     </span>
