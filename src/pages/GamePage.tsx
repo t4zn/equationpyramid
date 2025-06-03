@@ -198,6 +198,7 @@ const GamePage = () => {
     setIsActive(true);
     setScore(0); // Reset score on new puzzle
     setUsedCombinations(new Set()); // Reset used combinations
+    setGameStatus('playing'); // Reset game status to playing
   };
 
   useEffect(() => {
@@ -383,80 +384,90 @@ const GamePage = () => {
                 </div>
               </div>
             </div>
-            
-            <div className="text-sm mt-2">Combinations: {usedCombinations.size}</div>
           </div>
 
           {/* Hexagon Pyramid Layout - Middle section with flex-grow to take available space */}
-          <div className="flex flex-col items-center justify-center flex-grow my-2">
+          <div className="flex flex-col items-center justify-center flex-grow my-2 pb-12">
             {/* Row 1 */}
             <div className="flex justify-center">
               {hexagons.find(hex => hex.letter === 'A') && (
                 <div
                   key={hexagons.find(hex => hex.letter === 'A')!.id}
-                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
+                  className="hexagon m-0.5 flex justify-center items-center cursor-pointer bg-white w-[70px] h-[70px] relative shadow-none"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === 'A')!)}
                 >
-                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>A</div>
-                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
-                    {hexagons.find(hex => hex.letter === 'A')!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === 'A')!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === 'A')!.operator}{hexagons.find(hex => hex.letter === 'A')!.number}
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>A</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === 'A')!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === 'A')!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                    <span className="text-2xl mr-0.5">
+                      {hexagons.find(hex => hex.letter === 'A')!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === 'A')!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === 'A')!.operator}
+                    </span>
+                    {hexagons.find(hex => hex.letter === 'A')!.number}
                   </div>
                 </div>
               )}
             </div>
             {/* Row 2 */}
-            <div className="flex justify-center -mt-3">
+            <div className="flex justify-center -mt-4">
               {['B', 'C'].map(letter => hexagons.find(hex => hex.letter === letter) && (
                 <div
                   key={hexagons.find(hex => hex.letter === letter)!.id}
-                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
+                  className="hexagon m-0.5 flex justify-center items-center cursor-pointer bg-white w-[70px] h-[70px] relative shadow-none"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
-                    {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                     <span className="text-2xl mr-0.5">
+                      {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}
+                    </span>
+                    {hexagons.find(hex => hex.letter === letter)!.number}
                   </div>
                 </div>
               ))}
             </div>
             {/* Row 3 */}
-            <div className="flex justify-center -mt-3">
+            <div className="flex justify-center -mt-4">
               {['D', 'E', 'F'].map(letter => hexagons.find(hex => hex.letter === letter) && (
                 <div
                   key={hexagons.find(hex => hex.letter === letter)!.id}
-                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
+                  className="hexagon m-0.5 flex justify-center items-center cursor-pointer bg-white w-[70px] h-[70px] relative shadow-none"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
-                    {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                     <span className="text-2xl mr-0.5">
+                      {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}
+                    </span>
+                    {hexagons.find(hex => hex.letter === letter)!.number}
                   </div>
                 </div>
               ))}
             </div>
             {/* Row 4 */}
-            <div className="flex justify-center -mt-3">
+            <div className="flex justify-center -mt-4">
               {['G', 'H', 'I', 'J'].map(letter => hexagons.find(hex => hex.letter === letter) && (
                 <div
                   key={hexagons.find(hex => hex.letter === letter)!.id}
-                  className="hexagon m-1 flex flex-col justify-center items-center cursor-pointer bg-white w-16 h-16 relative shadow-lg"
+                  className="hexagon m-0.5 flex justify-center items-center cursor-pointer bg-white w-[70px] h-[70px] relative shadow-none"
                   style={{
                     clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
                   }}
                   onClick={() => handleHexagonClick(hexagons.find(hex => hex.letter === letter)!)}
                 >
-                  <div className={`text-xs font-medium ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>{letter}</div>
-                  <div className={`text-lg font-bold ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-yellow-600' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-500 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-500 animate-pulse' : 'text-black'}`}>
-                    {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}{hexagons.find(hex => hex.letter === letter)!.number}
+                   <div className={`text-sm font-normal font-['League Spartan'] absolute top-1 ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>{letter}</div>
+                  <div className={`text-3xl font-semibold font-['League Spartan'] ${hexagons.find(hex => hex.letter === letter)!.status === 'selected' ? 'text-amber-700' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-green' ? 'text-green-600 animate-pulse' : hexagons.find(hex => hex.letter === letter)!.status === 'flash-red' ? 'text-red-600 animate-pulse' : 'text-black'}`}>
+                     <span className="text-2xl mr-0.5">
+                      {hexagons.find(hex => hex.letter === letter)!.operator === '*' ? 'x' : hexagons.find(hex => hex.letter === letter)!.operator === '/' ? '÷' : hexagons.find(hex => hex.letter === letter)!.operator}
+                    </span>
+                    {hexagons.find(hex => hex.letter === letter)!.number}
                   </div>
                 </div>
               ))}
@@ -464,29 +475,38 @@ const GamePage = () => {
           </div>
 
           {/* Bottom controls */}
-          <div className="pb-8 flex flex-col gap-3">
-            {/* Combinations display */}
-            {correctCombination && (
-              <div className="text-center text-green-400 text-sm font-medium bg-green-900/20 py-2 px-4 rounded-lg">
-                Last Correct: {correctCombination}
-              </div>
-            )}
-            
-            {/* Action buttons */}
-            <div className="flex justify-between items-center">
+          <div className="w-full grid grid-cols-3 items-center px-4 pb-8">
+            {/* Left section: Combinations display */}
+            <div className="flex flex-col items-start gap-1 -mt-16">
+              <div className="text-sm text-white font-inter">Combinations</div>
+              {correctCombination && (
+                <div className="text-center text-gray-800 text-lg font-semibold bg-amber-400 py-1 px-3 rounded-md font-inter min-w-[80px]">
+                  {/* Display letters of the correct combination */}
+                  {selectedHexagonIds.length === 3 && hexagons.length > 0 && 
+                    selectedHexagonIds.map(id => hexagons.find(hex => hex.id === id)?.letter).join('')
+                  }
+                </div>
+              )}
+            </div>
+
+            {/* Center section: Submit button */}
+            <div className="flex justify-center">
               <Button
                 onClick={handleSubmit}
-                className={`px-6 py-3 text-base font-medium rounded-full shadow-lg transition-all duration-200 ${selectedHexagonIds.length === 3 ? 'bg-amber-400 text-black hover:bg-amber-500' : 'bg-gray-600 text-gray-300'}`}
+                className={`px-4 py-2 text-xs font-medium rounded-full shadow-lg transition-all duration-200 ${selectedHexagonIds.length === 3 ? 'bg-white text-black hover:bg-gray-200' : 'bg-gray-600 text-gray-300'}`}
                 disabled={selectedHexagonIds.length !== 3}
               >
                 Submit
               </Button>
-              
+            </div>
+
+            {/* Right section: Refresh button */}
+            <div className="flex justify-end">
               <Button 
                 onClick={handleRefresh} 
-                className="p-3 bg-gray-700 hover:bg-gray-600 rounded-full shadow-lg transition-all duration-200"
+                className="p-3 bg-transparent hover:bg-gray-600 rounded-full transition-all duration-200"
               >
-                <RefreshCw size={20} />
+                <RefreshCw size={20} color="white" />
               </Button>
             </div>
           </div>
@@ -520,24 +540,24 @@ const GamePage = () => {
       {/* Menu Overlay */}
       {showMenu && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50"> 
-          <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-xs w-full mx-4"> 
+          <div className="bg-gray-600/70 p-8 rounded-2xl shadow-2xl max-w-xs w-full mx-4"> 
             <h2 className="text-2xl font-bold mb-6 text-amber-400 text-center">Game Menu</h2>
             <div className="flex flex-col gap-3">
               <Button 
                 onClick={closeMenu} 
-                className="w-full px-5 py-3 text-base font-medium bg-amber-500 text-black rounded-xl hover:bg-amber-400 transition-all duration-200"
+                className="w-full px-5 py-3 text-base font-medium bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-all duration-200"
               >
                 Resume Game
               </Button>
               <Button 
                 onClick={handleRestart} 
-                className="w-full px-5 py-3 text-base font-medium bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all duration-200"
+                className="w-full px-5 py-3 text-base font-medium bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-all duration-200"
               >
                 New Game
               </Button>
               <Button 
                 onClick={handleQuit} 
-                className="w-full px-5 py-3 text-base font-medium bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all duration-200 mt-2"
+                className="w-full px-5 py-3 text-base font-medium bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-all duration-200 mt-2"
               >
                 Main Menu
               </Button>
